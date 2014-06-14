@@ -143,7 +143,10 @@ def summarize_standings(id):
 
 def nicelist(x):
     s = "["
-    s += ", ".join(map(lambda v: "%.3f" % (v,), x))
+    if len(x)>0 and type(x[0])==bool:
+        s += "  ".join(map(lambda v: u"  \u2193  " if v else u"     ", x))
+    else:
+        s += ", ".join(map(lambda v: "%.3f" % (v,), x))
     s += "]"
     return s
 
@@ -232,8 +235,8 @@ def optimal_adjustment(id, beliefs=None):
     orig_tied_up = min(standing)
     final_tied_up = min(final_standing)
     credit = (min(final_standing) - min(standing))
-    indicator_list = [0.0] * len(result)
-    indicator_list[best_choice] = 9.999
+    indicator_list = [False] * len(result)
+    indicator_list[best_choice] = True
 
     feasible = False
     for old, new in zip(actual_probability, result):
@@ -345,7 +348,7 @@ def find_data_based_trading_opportunities():
     candidates = list(set(candidates))
     candidates.sort(key=lambda q_id: summarizequestions.by_id[q_id]['trade_count'], reverse=True)
 
-    for cand in candidates[0:10]:
+    for cand in candidates[0:20]:
         v = determine_trade_from_data(cand)
         if v:
             print v

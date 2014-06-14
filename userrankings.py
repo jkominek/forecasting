@@ -70,7 +70,7 @@ def fetch_and_update(id):
     if not saw_requested:
         print "not found; faking"
         c.execute("insert into rankings values (?,?,?,?)",
-                  (id, CURRENT_DAY, None, 500.0))
+                  (id, CURRENT_DAY, None, 250.0))
 
     conn.commit()
 
