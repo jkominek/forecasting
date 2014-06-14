@@ -8,6 +8,8 @@ import sys
 import math
 from datetime import datetime
 from time import time
+from StringIO import StringIO
+import gzip
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -44,8 +46,19 @@ if options.no_fetch or (os.access(FILE, os.R_OK) and \
                         time() < (os.stat(FILE).st_ctime + 3600)):
     data = json.loads(open(FILE).read())
 else:
-    r = urllib2.urlopen("https://scicast.org/questions/?include_prob=True&include_comment_count=True&include_trade_count=True&include_user_roles=False&include_question_clique=False&include_question_relationship=False")
-    data = json.loads(r.read())
+    req = urllib2.Request("https://scicast.org/questions/?include_prob=True&include_comment_count=True&include_trade_count=True&include_user_roles=False&include_question_clique=False&include_question_relationship=False")
+
+    req.add_header('Accept-encoding', 'gzip')
+
+    r = urllib2.urlopen(req)
+    if r.info().get('Content-Encoding') == 'gzip':
+        buf = StringIO(r.read())
+        f = gzip.GzipFile(fileobj=buf)
+        bs = f.read()
+        data = json.loads(bs)
+    else:
+        data = json.loads(r.read())
+
     open(FILE, "w").write(json.dumps(data))
 
 if options.fetch_only:
