@@ -187,6 +187,20 @@ def optimal_adjustment(id):
     if len(actual_probability)>2:
         choices = range(0, len(actual_probability))
 
+    def move_prob_to(choice, new_prob):
+        leftover = -(candidate_prob - actual_probability[choice])
+        new_probs = [ ]
+        for i in range(0, len(actual_probability)):
+            if i == choice:
+                new_probs.append(candidate_prob)
+            else:
+                op = actual_probability[i]
+                new_probs.append(op/sum_of_others*leftover + op)
+        return new_probs
+
+    def change_in_assets(old, new):
+        return map(outcome, old, new)
+
     result = copy.copy(actual_probability)
     best_score = expected_under(actual_probability)
     best_choice = -1
@@ -194,17 +208,9 @@ def optimal_adjustment(id):
         sum_of_others = sum(actual_probability[0:choice] + actual_probability[choice+1:])
         for candidate_prob in range(1, 100):
             candidate_prob /= 100.0
-            leftover = -(candidate_prob - actual_probability[choice])
-            new_probs = [ ]
-            for i in range(0, len(actual_probability)):
-                if i == choice:
-                    new_probs.append(candidate_prob)
-                else:
-                    op = actual_probability[i]
-                    new_probs.append(op/sum_of_others*leftover + op)
-            new_probs_sum = sum(new_probs)
+            new_probs = move_prob_to(choice, candidate_prob)
 
-            asset_change = map(outcome, actual_probability, new_probs)
+            asset_change = change_in_assets(actual_probability, new_probs)
             final_standing = map(lambda old, change: old+change, standing, asset_change)
             final_tied_up = min(final_standing)
             if (final_tied_up < (-tied_up_limit)):
@@ -217,13 +223,7 @@ def optimal_adjustment(id):
                 result = copy.copy(new_probs)
                 best_choice = choice
 
-    #bounds = [(0.01, .99)] * len(beliefs)
-    #result = scipy.optimize.minimize(expected_under,
-    #                                 beliefs,
-    #                                 method='L-BFGS-B',
-    #                                 bounds=bounds)
-    #result = normalize_beliefs(result.x)
-    asset_change = map(outcome, actual_probability, result)
+    asset_change = change_in_assets(actual_probability, result)
     final_standing = map(lambda old, change: old+change, standing, asset_change)
     orig_tied_up = min(standing)
     final_tied_up = min(final_standing)
