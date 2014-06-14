@@ -6,6 +6,7 @@ boring = set([455, 351, 454, 447, 393, 394,  29,
               490, 524, 526, 527, 502, 480, 528,
               590, 520, 703, 708, 477, 479, 513,
               500, 492, 487, 199, 538, 537, 504,
+              497, 486, 471, 501, 519, 522, 503,
               650, 651, 652])
 
 weak = 0.5
@@ -38,7 +39,7 @@ def no(percent):
     return [percent, 100-percent]
 
 # what happened to mh370
-#o(365,  [ 0,    0,    0,    0,    0,    100], varying_strength(date(2014,6,1), date(2014,6,28), 1, strong))
+o(365,  [ 0,    0,    0,    0,    0,    100], strong)
 
 # Will Nature retract one or more of the January 2014 papers by H. Obokata et al. describing stimulus-triggered acquisition of pluripotency (STAP)?
 o(395, yes(70), weak)
@@ -88,13 +89,13 @@ o(666, [0.1, 0.11, 0.12, 0.15, 1, 5],
   varying_strength(date(2014,9,1), date(2015,9,6)))
 
 # Will Google announce development of a smartwatch at or before the Google I/O 2014 Conference?
-o(672, yes(66.666), varying_strength(date(2014,6,10), date(2014,6,24)))
+o(672, yes(70))
 
 # Will there be at least one female winner of a Fields Medal in 2014?
 o(462, yes(20), weak)
 
 # Will Google make end-to-end PGP encryption a core feature in Gmail by August 2014?
-o(585, no(99), varying_strength(date(2014,6,1), date(2014,7,25), weak*1.5, strong))
+o(585, no(98), varying_strength(date(2014,6,1), date(2014,7,25), weak*1.5, strong))
 
 # When will the Deque Conjecture be proven?
 o(26, [1, 10, 10, 10, 20], weak)
@@ -115,13 +116,13 @@ o(464, no(99), strong)
 o(659, yes(50), weak)
 
 # Will the International Sun-Earth Explorer 3 be successfully commanded to fire its thrusters by researchers?
-o(643, yes(75), weak)
+o(643, yes(76), weak)
 
 # Will the International Sun-Earth Explorer 3 start to collect data and send it to Earth?
 o(644, yes(65), weak)
 
 # Will NASA land a telepresence robot on Venus by 2020?
-o(653, no(99.9))
+o(653, no(98))
 
 # When will UHD programming be available from Netflix on optical disc?
 o(587, [9, 20, 25, 46])
@@ -151,7 +152,7 @@ o(562, no(75), weak)
 o(149, [1, 1.5, 2, 2.5, 3], weak)
 
 # Will the Axion Dark Matter Experiment detect axions by July 2014?
-o(434, no(99), strong)
+o(434, no(98), strong)
 
 # When will the first chess player achieve a rating of at least 2900?
 o(313, [2, 2, 2, 2, 1])
@@ -190,7 +191,7 @@ o(402, yes(40), weak)
 o(424, no(66))
 
 # Will project NA62 at the CERN in Geneva make a discovery of new unknown particles not predicted by the Standard Model of particle physics in 2014?
-o(183, no(99), weak)
+o(183, no(98), weak)
 
 # What will the unemployment rate for ACS chemists be in 2014?
 o(348, [1, 2, 1, 0.5, 0.5, 0.1], weak)
@@ -202,10 +203,10 @@ o(312, [1, 100, 1, 1, 10], varying_strength(date(2014,1,1), date(2020,1,1), weak
 o(27, [1, 2, 3, 4, 50], varying_strength(date(2045,1,1), date(2050,1,1), weak, strong))
 
 # Which of the following changes will be reported about "Status and trends of linguistic diversity and numbers of speakers of indigenous languages" in the fourth edition of the Global Biodiversity Outlook report?
-o(99, [0.5, 10, 1, 1])
+o(99, [0.5, 10, 1, 0.1], weak*0.5)
 
 # Will the NASA's Mars Atmosphere and Volatile Evolution (MAVEN) spacescraft launched on November 17, 2013 enter the Mars orbit by the end of September 2014?
-o(143, yes(99))
+o(143, yes(95))
 
 # Will the silver nanowire ink touch sensitive screens being developed by 3M and Cambrios be in commercially available smartphones by the end of 2015?
 o(363, yes(33), weak)
@@ -300,3 +301,47 @@ o(649, yes(90))
 
 # when will a fully autonomous (self-driving) car made by a major auto maker drive more than 60 miles in the united states without input from the driver?
 o(696, [2, 3, 4, 3, 2, 1], weak)
+
+# On June 2014, what will be the Top 500 performance share by geographic region?
+performance = [1.1 * 120339438,
+               1.11 * 72809408,
+               1.08 * 31768483,
+               1.08 * 11670158,
+               1.05 * (3040297+3864640+2302522+2180151+1479371) ]
+performance = map(float, performance)
+o(54, performance)
+
+# On November 2014, what will be the Top 500 performance share by geographic region?
+performance = [1.10**2 * 120339438,
+               1.11**2 * 72809408,
+               1.08**2 * 31768483,
+               1.08**2 * 11670158,
+               1.05**2 * (3040297+3864640+2302522+2180151+1479371) ]
+performance = map(float, performance)
+o(48, performance)
+
+# On June 2014, what will be the Top 500 performance share by cores per socket?
+performance = [ (0.98 * 6054483 + 25323699),
+                97765893,
+                (6291384 + 42786013),
+                1.02 * 71736595,
+                10000000 ]
+o(55, performance)
+
+# Will Amazon deliver its first package using an unmanned aerial vehicle by DEC 31 2017?
+o(105, yes(28), weak)
+
+# Which of the following 2016 presidential candidates will be the first to accept Bitcoin campaign contributions? 
+o(371, [5, 1, 2, 20, 5, 2, 20], weak)
+
+# Will the June 2014 TOP500 rankings announce that the performance of the #500 ranked supercomputer has exceeded 150 thousand Gflops/s?
+o(14, yes(10), 0.2)
+
+# Will the Mars Curiosity Rover discover organic matter on Mars-evidence that life exists or existed on the planet-by July 1, 2015?
+o(377, no(98))
+
+# When will the Chinese National Space Administration land a man or woman on the moon?
+o(136, [1, 9, 10, 10])
+
+# Will the Chinese National Space Administration retrieve at least 2kg of lunar rock/soil samples by January 1 2018? 
+o(135, yes(15), varying_strength(date(2014,6,15), date(2017,10,1)))
