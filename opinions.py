@@ -328,6 +328,17 @@ performance = [ (0.98 * 6054483 + 25323699),
                 10000000 ]
 o(55, performance)
 
+# On June 2014, what will be the Top 500 performance share by vendor?
+performance = [ 79020195,
+                41823840,
+                38733979,
+                8914147,
+                81588306 ]
+o(53, performance)
+
+# On November 2014, what will be the Top 500 performance share by vendor?
+o(47, performance)
+
 # Will Amazon deliver its first package using an unmanned aerial vehicle by DEC 31 2017?
 o(105, yes(28), weak)
 
@@ -345,3 +356,18 @@ o(136, [1, 9, 10, 10])
 
 # Will the Chinese National Space Administration retrieve at least 2kg of lunar rock/soil samples by January 1 2018? 
 o(135, yes(15), varying_strength(date(2014,6,15), date(2017,10,1)))
+
+# Will the same machine hold the #1 rank on the Top500 and Graph500 lists compiled in June 2014?
+o(12, yes(10))
+
+# On June 2014, what will be the (performance-weighted) gigaflops per core of the Top 500?
+o(73, [10, 100, 10, 1, 0])
+
+# In the 2013 Annual Report from the National Poison Data System (NPDS), will analgesics be the number one substance class for exposures among adults in the US?
+o(226, yes(63.1), weak)
+
+# Will Google announce development of an Android Silver class of devices at or before the Google I/O 2014 Conference?
+o(700, yes(15), 0.05)
+
+# Will Google announce development of an Android In-Car System at or before the Google I/O 2014 Conference?
+o(698, yes(55), 0.05)
