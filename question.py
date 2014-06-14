@@ -9,7 +9,7 @@ import json
 import os
 import gzip
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import time, sleep
 from StringIO import StringIO
 import copy
@@ -17,6 +17,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 import summarizequestions
+import userrankings
 
 FETCH_DELAY = 0
 VERBOSE = False
@@ -50,6 +51,8 @@ def max_tied_up(q):
     id = q['question']['id']
     if opinions.has_key(id):
         maximum *= opinions[id][1]
+    else:
+        maximum /= 3.0
 
     return maximum
 
@@ -146,7 +149,7 @@ def nicelist(x):
 
 from opinions import opinions, normalize_beliefs
 username = 'jkominek'
-def optimal_adjustment(id):
+def optimal_adjustment(id, beliefs=None):
     x = fetch_question(id)
     standing = { }
     for trade in x['trades']:
@@ -158,7 +161,8 @@ def optimal_adjustment(id):
     standing = map(lambda k: standing[k], sorted(standing.keys()))
     if len(standing) == 0:
         standing = [0.0] * len(x['prob'])
-    beliefs = opinions[id][0]
+    if beliefs == None:
+        beliefs = opinions[id][0]
     my_expected = sum(map(lambda b,a: b*a, beliefs, standing))
     #print my_expected
     actual_probability = x['prob']
@@ -281,4 +285,71 @@ def find_optimal_trading_opportunities():
     FETCH_DELAY = old_delay
     VERBOSE = False
 
+def determine_belief_from_data(id):
+    q = fetch_question(id)
+
+    NOW = datetime.now()
+
+    beliefs_by_user = { }
+
+    count = 0
+    for trade in q['trades']:
+        user_id = trade['user']['id']
+        if user_id == 296: # me!
+            # my trades on things i don't have
+            # beliefs in shouldn't affect my
+            # beliefs
+            continue
+        created_at = datetime.strptime(trade['created_at'][0:19], "%Y-%m-%dT%H:%M:%S")
+        if NOW - timedelta(7) < created_at:
+            if beliefs_by_user.has_key(user_id):
+                new = trade['new_value_list']
+                old = beliefs_by_user[user_id]
+                beliefs_by_user[user_id] = map(lambda x,y: x+y, new, old)
+            else:
+                beliefs_by_user[user_id] = trade['new_value_list']
+
+    final_belief = None
+    for user_id in beliefs_by_user.keys():
+        beliefs_by_user[user_id] = normalize_beliefs(beliefs_by_user[user_id])
+        user_score = userrankings.min_score(user_id)
+        if final_belief == None:
+            final_belief = map(lambda p: p*user_score, beliefs_by_user[user_id])
+            continue
+
+        final_belief = map(lambda fp, np: fp + np*user_score, final_belief, beliefs_by_user[user_id])
+
+    final_belief = normalize_beliefs(final_belief)
+    return final_belief
+
+def determine_trade_from_data(id):
+    predicted_belief = determine_belief_from_data(id)
+
+    return optimal_adjustment(id, predicted_belief)
+
+def find_data_based_trading_opportunities():
+    candidates = [ ]
+    for q_id in summarizequestions.by_id.keys():
+        if opinions.has_key(q_id):
+            continue
+        q = summarizequestions.by_id[q_id]
+        if q['question']['settlement_at'] == None:
+            settled_at = datetime(2050,1,1,0,0,0)
+        else:
+            settled_at = datetime.strptime(q['question']['settlement_at'][0:19], "%Y-%m-%dT%H:%M:%S")
+            if settled_at < datetime.now() + timedelta(2):
+                continue
+        if q['trade_count']>50:
+            candidates.append(q_id)
+
+    candidates = list(set(candidates))
+    candidates.sort(key=lambda q_id: summarizequestions.by_id[q_id]['trade_count'], reverse=True)
+
+    for cand in candidates[0:10]:
+        v = determine_trade_from_data(cand)
+        if v:
+            print v
+
 find_optimal_trading_opportunities()
+
+find_data_based_trading_opportunities()

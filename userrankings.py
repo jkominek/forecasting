@@ -36,6 +36,8 @@ def fetch_for_user(id):
     else:
         data = json.loads(r.read())
 
+    sleep(1)
+
     return data
 
 # create table users (username text, id int);
@@ -44,11 +46,16 @@ def fetch_for_user(id):
 def fetch_and_update(id):
     data = fetch_for_user(id)
 
+    saw_requested = False
+    
     for record in data:
         username = record['username']
         score = record['score']
         user_id = record['user_id']
         pos = record['pos']
+
+        if user_id == id:
+            saw_requested = True
 
         c.execute("select 1 from users where id=?", (user_id,))
         if c.fetchone() == None:
@@ -60,6 +67,11 @@ def fetch_and_update(id):
             c.execute("insert into rankings values (?,?,?,?)",
                       (user_id, CURRENT_DAY, pos, score))
 
+    if not saw_requested:
+        print "not found; faking"
+        c.execute("insert into rankings values (?,?,?,?)",
+                  (id, CURRENT_DAY, None, 500.0))
+
     conn.commit()
 
 def by_id(user_id):
@@ -69,7 +81,7 @@ def by_id(user_id):
         fetch_and_update(user_id)
         c.execute("select * from rankings where id=? and day=?", (user_id,CURRENT_DAY))
         record = c.fetchone()
-    if record == None:
+    if record == None or record[3] == None:
         return None
     return { 'id': record[0],
              'pos': record[2],
@@ -138,3 +150,13 @@ def find_active_users():
 def fetch_active_users():
     for user_id in find_active_users():
         by_id(user_id)
+
+def min_score(user_id):
+    c.execute("select min(score) from rankings where id=? and ?<=day",
+              (user_id, CURRENT_DAY - timedelta(7)))
+    score = c.fetchone()[0]
+    if score == None:
+        by_id(user_id)
+    c.execute("select min(score) from rankings where id=? and ?<=day",
+              (user_id, CURRENT_DAY - timedelta(7)))
+    return c.fetchone()[0]
