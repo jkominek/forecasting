@@ -19,6 +19,7 @@ sys.setdefaultencoding('utf-8')
 import summarizequestions
 
 FETCH_DELAY = 0
+VERBOSE = False
 
 def max_tied_up(q):
     if q['question']['settlement_at'] == None:
@@ -45,6 +46,10 @@ def max_tied_up(q):
         maximum = 20.0
     else:
         maximum = 7.5
+
+    id = q['question']['id']
+    if opinions.has_key(id):
+        maximum *= opinions[id][1]
 
     return maximum
 
@@ -135,7 +140,7 @@ def summarize_standings(id):
 
 def nicelist(x):
     s = "["
-    s += ", ".join(map(lambda v: "%.2f" % (v,), x))
+    s += ", ".join(map(lambda v: "%.3f" % (v,), x))
     s += "]"
     return s
 
@@ -184,6 +189,7 @@ def optimal_adjustment(id):
 
     result = copy.copy(actual_probability)
     best_score = expected_under(actual_probability)
+    best_choice = -1
     for choice in choices:
         sum_of_others = sum(actual_probability[0:choice] + actual_probability[choice+1:])
         for candidate_prob in range(1, 100):
@@ -197,11 +203,19 @@ def optimal_adjustment(id):
                     op = actual_probability[i]
                     new_probs.append(op/sum_of_others*leftover + op)
             new_probs_sum = sum(new_probs)
-            #print choice, new_probs, leftover, new_probs_sum, abs(new_probs_sum - 1.0)
+
+            asset_change = map(outcome, actual_probability, new_probs)
+            final_standing = map(lambda old, change: old+change, standing, asset_change)
+            final_tied_up = min(final_standing)
+            if (final_tied_up < (-tied_up_limit)):
+                continue
+
             score = expected_under(new_probs)
+
             if score > best_score:
                 best_score = score
                 result = copy.copy(new_probs)
+                best_choice = choice
 
     #bounds = [(0.01, .99)] * len(beliefs)
     #result = scipy.optimize.minimize(expected_under,
@@ -214,6 +228,8 @@ def optimal_adjustment(id):
     orig_tied_up = min(standing)
     final_tied_up = min(final_standing)
     credit = (min(final_standing) - min(standing))
+    indicator_list = [0.0] * len(result)
+    indicator_list[best_choice] = 9.999
 
     feasible = False
     for old, new in zip(actual_probability, result):
@@ -223,6 +239,8 @@ def optimal_adjustment(id):
     if feasible and (final_tied_up < (-tied_up_limit)):
         feasible = orig_tied_up < final_tied_up
 
+    feasible = feasible or VERBOSE
+
     if not feasible:
         return None
 
@@ -230,8 +248,10 @@ def optimal_adjustment(id):
 
     s +=  "max tied up: " + str(tied_up_limit) + "\n"
     s +=  "      belief: " + nicelist(beliefs) + "\n"
-    s +=  " *** optimal: " + nicelist(result) + "\n"
     s +=  "    cur prob: " + nicelist(actual_probability) + "\n"
+    if actual_probability[best_choice] != result[best_choice]:
+        s +=  "              " + nicelist(indicator_list) + " " + x['question']['choices'][best_choice]['name'].strip() + "\n"
+    s +=  " *** optimal: " + nicelist(result) + "\n"
     s +=  "\n"
     s +=  " orig assets: " + nicelist(standing) + "\n"
     s += u"    \u0394 assets: " + nicelist(asset_change) + "\n"
@@ -245,10 +265,12 @@ def optimal_adjustment(id):
 
 def find_optimal_trading_opportunities():
     global FETCH_DELAY
+    global VERBOSE
     old_delay = FETCH_DELAY
     FETCH_DELAY = 5
 
     if len(sys.argv)>1:
+        VERBOSE = True
         candidates = map(int, sys.argv[1:])
     else:
         candidates = sorted(list(opinions.keys()))
@@ -257,5 +279,6 @@ def find_optimal_trading_opportunities():
         if v:
             print v
     FETCH_DELAY = old_delay
+    VERBOSE = False
 
 find_optimal_trading_opportunities()
