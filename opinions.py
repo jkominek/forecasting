@@ -110,10 +110,10 @@ o(318, [10, 5, 1, 0.01, 0.001], weak)
 o(401, no(90), varying_strength(date(2014,6,5), date(2014,8,20), weak, strong))
 
 # Will Bluefin-21 locate the black box from Malaysian Airlines flight MH-370?
-o(464, no(99), strong)
+#o(464, no(99), strong)
 
 # Will 23andMe offer health-related genetic reports for new customers by December 2014?
-o(659, yes(50), weak)
+o(659, yes(33.333), weak)
 
 # Will the International Sun-Earth Explorer 3 be successfully commanded to fire its thrusters by researchers?
 o(643, yes(76), weak)
@@ -383,3 +383,15 @@ o(11, [0, 4, 5, 0], weak)
 
 # Will Hewlett-Packard comprise at least 40% of the Vendors' System Share on the Top500 Supercomputers List compiled in June 2014?
 o(15, yes(50), 0.1)
+
+# When will 99% of the top 1 million web domains in the world be immune to Heartbleed? (538)
+o(538, [0.000, 0.000, 0.01, 0.02, 0.03, 0.95], 0.05)
+
+# Will Stanford's Folding@Home distributed computing project exceed 30 PetaFLOPS on July 1st 2014?
+o(563, yes(1), weak)
+
+# Will the number of exposures to carbon monoxide reported in the 2013 Annual Report from the National Poison Data System (NPDS) be lower than 10,000?
+o(189, yes(0.9))
+
+# Will there be 15 or more named storms (including subtropical storms) in the Atlantic-Caribbean-Gulf of Mexico region during the 2014 hurricane season?
+o(410, yes(26), weak)
