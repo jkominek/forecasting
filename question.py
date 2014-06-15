@@ -268,6 +268,11 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
     indicator_list = [False] * len(result)
     indicator_list[best_choice] = True
 
+    cur_old_score = sum(map(lambda a,p: a*p, standing, actual_probability))
+    cur_new_score = sum(map(lambda a,p: a*p, final_standing, result))
+    bel_old_score = sum(map(lambda a,p: a*p, standing, beliefs))
+    bel_new_score = sum(map(lambda a,p: a*p, final_standing, beliefs))
+
     feasible = False
     for old, new in zip(actual_probability, result):
         if abs(old-new)>0.0099:
@@ -299,6 +304,8 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
         s +=  "       debit: %.3f\n" % (-credit,)
     else:
         s +=  "      credit: %.3f\n" % (credit,)
+    s +=      "  curr score: %.3f\n" % (cur_new_score - cur_old_score,)
+    s +=      " final score: %.3f\n" % (bel_new_score - bel_old_score,)
 
     if back_out:
         s += optimal_adjustment(id, beliefs=beliefs, back_out=False, actual_probability=result, standing=final_standing)
@@ -380,35 +387,59 @@ def determine_trade_from_data(id):
 
     return optimal_adjustment(id, predicted_belief)
 
-def find_data_based_trading_opportunities():
-    candidates = [ ]
-    for q_id in summarizequestions.by_id.keys():
-        if opinions.has_key(q_id):
-            continue
-        q = summarizequestions.by_id[q_id]
-        if q['question']['settlement_at'] == None:
-            settled_at = datetime(2050,1,1,0,0,0)
-        else:
-            settled_at = datetime.strptime(q['question']['settlement_at'][0:19], "%Y-%m-%dT%H:%M:%S")
-            if settled_at < datetime.now() + timedelta(2):
+DO_NOT_TRUST_CONSENSUS = set([74, 112, 537, 164, 110])
+def find_data_based_trading_opportunities(candidates=[ ]):
+    if len(candidates)==0:
+        for q_id in summarizequestions.by_id.keys():
+            if opinions.has_key(q_id):
                 continue
-        if q['trade_count']>50:
-            candidates.append(q_id)
+            if q_id in DO_NOT_TRUST_CONSENSUS:
+                continue
+            q = summarizequestions.by_id[q_id]
+            if q['question']['settlement_at'] == None:
+                settled_at = datetime(2050,1,1,0,0,0)
+            else:
+                settled_at = datetime.strptime(q['question']['settlement_at'][0:19], "%Y-%m-%dT%H:%M:%S")
+                if settled_at < datetime.now() + timedelta(2):
+                    continue
+            if q['trade_count']>60:
+                candidates.append(q_id)
 
-    candidates = list(set(candidates))
-    candidates.sort(key=lambda q_id: summarizequestions.by_id[q_id]['trade_count'], reverse=True)
+        candidates = list(set(candidates))
+        candidates.sort(key=lambda q_id: summarizequestions.by_id[q_id]['trade_count'], reverse=True)
+        candidates = candidates#[:60]
 
-    for cand in candidates[0:25]:
+    for cand in candidates:
         v = determine_trade_from_data(cand)
         if v:
             print v
 
 if __name__ == '__main__':
-    if len(sys.argv)>1:
-        if sys.argv[1]=='-b':
-            find_optimal_trading_opportunities(map(int, sys.argv[2:]), back_out=True)
-        else:
-            find_optimal_trading_opportunities(map(int, sys.argv[1:]))
+    from optparse import OptionParser
+
+    parser = OptionParser()
+    parser.add_option("-b", action="store_true", default=False,
+                      dest="back_out", help="Back out of existing position?")
+    parser.add_option("-o", action="store_true", default=False,
+                      dest="optimal", help="Find optimal, opinion-based, trades")
+    parser.add_option("-d", action="store_true", default=False,
+                      dest="data_based", help="Find optimal, data-based, trades")
+
+    (options, args) = parser.parse_args()
+
+    args = map(int, args)
+
+    have_opinions = filter(lambda id: opinions.has_key(id), args)
+    no_opinion = filter(lambda id: not opinions.has_key(id), args)
+
+    if len(args)>0:
+        if len(have_opinions) and (options.optimal==True or options.data_based==False):
+            find_optimal_trading_opportunities(have_opinions, back_out=options.back_out)
+
+        if len(no_opinion) and (options.optimal==False or options.data_based==True):
+            find_data_based_trading_opportunities(no_opinion)
     else:
-        find_optimal_trading_opportunities()
-        find_data_based_trading_opportunities()
+        if options.optimal or options.data_based==False:
+            find_optimal_trading_opportunities(back_out=options.back_out)
+        if options.data_based:
+            find_data_based_trading_opportunities()
