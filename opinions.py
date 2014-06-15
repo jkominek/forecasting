@@ -155,7 +155,7 @@ o(149, [1, 1.5, 2, 2.5, 3], weak)
 o(434, no(98), strong)
 
 # When will the first chess player achieve a rating of at least 2900?
-o(313, [2, 2, 2, 2, 1])
+o(313, [3, 3, 2, 2, 1])
 
 # Will Paypal integrate Bitcoin payments by February 28, 2015?
 o(341, no(90), weak)
@@ -250,10 +250,10 @@ o(453, goes_to(no, 66.666, date(2014,6,15), date(2017,10,1)),
 o(41, [1, 2, 20*0.8, 2, 1], strong)
 
 # On June 2014, what will be the geographic region of the Top 500 winner? 
-o(43, [2, 10*0.8, 1, 1, 1], strong)
+o(40, [2, 10*0.8, 1, 1, 1], strong)
 
 # On June 2014, what will be the vendor of the Top 500 winner? 
-o(39, [2, 2, 1, 1, 50], strong)
+o(39, [2, 2, 1, 1, 100], strong)
 
 # On June 2014, what will be the processor generation of the Top 500 winner? 
 o(42, [1, 2, 20*0.9, 1, 1], strong)
@@ -371,3 +371,15 @@ o(700, yes(15), 0.05)
 
 # Will Google announce development of an Android In-Car System at or before the Google I/O 2014 Conference?
 o(698, yes(55), 0.05)
+
+# Will the average temperature for the contiguous U.S. during July 2014 be above 75oF?
+o(373, yes(12), weak)
+
+# How many near-Earth large asteroids will NASA detect in 2014?
+o(321, [0.096, 0.857, 0.026, 0, 0])
+
+# How many IBM-manufactured supercomputers will make the top 10 of the June 2014 TOP500 world's fastest supercomputer rankings?
+o(11, [0, 4, 5, 0], weak)
+
+# Will Hewlett-Packard comprise at least 40% of the Vendors' System Share on the Top500 Supercomputers List compiled in June 2014?
+o(15, yes(50), 0.1)
