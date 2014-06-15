@@ -109,23 +109,40 @@ def outcome(start, stop):
 def outcomes(start, stop):
     return map(lambda old,new: outcome(old,new), start, stop)
 
-def summarize_standings(id):
+def summarize_standings(id, ignore=0):
     x = fetch_question(id)
 
     standings = { }
 
-    for trade in x['trades']:
+    desired = x['trades']
+    desired.sort(key=lambda t: t['created_at'])
+    if ignore>0:
+        for trade in desired[-ignore:]:
+            user = trade['user']['username']
+            print trade.keys()
+            print user, trade['user']['id']
+            print trade['created_at']
+            print trade['old_value_list']
+            print trade['new_value_list']
+            print outcomes(trade['old_value_list'], trade['new_value_list'])
+            print trade['assets_per_option']
+            print
+
+        desired = desired[:-ignore]
+
+
+    for trade in desired:
         user = trade['user']['username']
         user_standings = standings.setdefault(user, { })
 
         #print user
-        print trade['old_value_list']
-        print trade['new_value_list']
+        #print trade['old_value_list']
+        #print trade['new_value_list']
 
-        print outcomes(trade['old_value_list'], trade['new_value_list'])
-        print trade['assets_per_option']
+        #print outcomes(trade['old_value_list'], trade['new_value_list'])
+        #print trade['assets_per_option']
 
-        print
+        #print
 
         assets = trade['assets_per_option']
         for asset, i in zip(assets, range(0, len(assets))):
@@ -152,23 +169,26 @@ def nicelist(x):
 
 from opinions import opinions, normalize_beliefs
 username = 'jkominek'
-def optimal_adjustment(id, beliefs=None):
+def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None, standing=None):
     x = fetch_question(id)
-    standing = { }
-    for trade in x['trades']:
-        if trade['user']['username'] != username:
-            continue
-        assets = trade['assets_per_option']
-        for asset, i in zip(assets, range(0, len(assets))):
-            standing[i] = standing.get(i, 0.0) + float(asset)
-    standing = map(lambda k: standing[k], sorted(standing.keys()))
-    if len(standing) == 0:
-        standing = [0.0] * len(x['prob'])
+    if standing == None:
+        standing = { }
+        for trade in x['trades']:
+            if trade['user']['username'] != username:
+                continue
+            assets = trade['assets_per_option']
+            for asset, i in zip(assets, range(0, len(assets))):
+                standing[i] = standing.get(i, 0.0) + float(asset)
+        standing = map(lambda k: standing[k], sorted(standing.keys()))
+        if len(standing) == 0:
+            standing = [0.0] * len(x['prob'])
+    orig_tied_up = min(standing)
     if beliefs == None:
         beliefs = opinions[id][0]
     my_expected = sum(map(lambda b,a: b*a, beliefs, standing))
     #print my_expected
-    actual_probability = x['prob']
+    if actual_probability==None:
+        actual_probability = x['prob']
     current_expected = sum(map(lambda b,a: b*a, actual_probability, standing))
     #print current_expected
 
@@ -187,7 +207,12 @@ def optimal_adjustment(id, beliefs=None):
             cost = 1.0
         else:
             cost = 1.0 / cost
-        maximize_this = sum(map(lambda b,a: b*a, beliefs, new_standings)) / cost
+
+        if back_out:
+            maximize_this = -cost / sum(map(lambda b,a: b*a, beliefs, new_standings))
+        else:
+            maximize_this = sum(map(lambda b,a: b*a, beliefs, new_standings)) / cost
+
         return maximize_this
 
     choices = [1]
@@ -220,7 +245,13 @@ def optimal_adjustment(id, beliefs=None):
             asset_change = change_in_assets(actual_probability, new_probs)
             final_standing = map(lambda old, change: old+change, standing, asset_change)
             final_tied_up = min(final_standing)
-            if (final_tied_up < (-tied_up_limit)):
+            cost = min(final_standing) - min(standing)
+
+            final_expected = sum(map(lambda ep, fs: ep*fs, beliefs, final_standing))
+            if back_out and (final_expected + cost < current_expected):
+                continue
+
+            if not (((-tied_up_limit) < final_tied_up) or (orig_tied_up < final_tied_up)):
                 continue
 
             score = expected_under(new_probs)
@@ -232,7 +263,6 @@ def optimal_adjustment(id, beliefs=None):
 
     asset_change = change_in_assets(actual_probability, result)
     final_standing = map(lambda old, change: old+change, standing, asset_change)
-    orig_tied_up = min(standing)
     final_tied_up = min(final_standing)
     credit = (min(final_standing) - min(standing))
     indicator_list = [False] * len(result)
@@ -240,7 +270,9 @@ def optimal_adjustment(id, beliefs=None):
 
     feasible = False
     for old, new in zip(actual_probability, result):
-        if abs(old-new)>0.01:
+        if abs(old-new)>0.0099:
+            feasible = True
+        elif abs(old-new)>0.002 and abs(credit)>5.0:
             feasible = True
 
     if feasible and (final_tied_up < (-tied_up_limit)):
@@ -268,21 +300,24 @@ def optimal_adjustment(id, beliefs=None):
     else:
         s +=  "      credit: %.3f\n" % (credit,)
 
+    if back_out:
+        s += optimal_adjustment(id, beliefs=beliefs, back_out=False, actual_probability=result, standing=final_standing)
+
     return s
 
-def find_optimal_trading_opportunities():
+def find_optimal_trading_opportunities(candidates=None, back_out=False):
     global FETCH_DELAY
     global VERBOSE
     old_delay = FETCH_DELAY
     FETCH_DELAY = 5
 
-    if len(sys.argv)>1:
-        VERBOSE = True
-        candidates = map(int, sys.argv[1:])
-    else:
+    if candidates == None:
         candidates = sorted(list(opinions.keys()))
+    else:
+        VERBOSE = True
+
     for candidate in candidates:
-        v = optimal_adjustment(candidate)
+        v = optimal_adjustment(candidate, back_out=back_out)
         if v:
             print v
     FETCH_DELAY = old_delay
@@ -296,6 +331,7 @@ def determine_belief_from_data(id):
     beliefs_by_user = { }
 
     count = 0
+    included_trades = 0
     for trade in q['trades']:
         user_id = trade['user']['id']
         if user_id == 296: # me!
@@ -305,6 +341,11 @@ def determine_belief_from_data(id):
             continue
         created_at = datetime.strptime(trade['created_at'][0:19], "%Y-%m-%dT%H:%M:%S")
         if NOW - timedelta(7) < created_at:
+            if userrankings.min_score(user_id) <= 5000.0:
+                # no sense including the below average
+                continue
+
+            included_trades += 1
             if beliefs_by_user.has_key(user_id):
                 new = trade['new_value_list']
                 old = beliefs_by_user[user_id]
@@ -312,11 +353,15 @@ def determine_belief_from_data(id):
             else:
                 beliefs_by_user[user_id] = trade['new_value_list']
 
+    if included_trades < 10 or len(beliefs_by_user.keys())<4:
+        return None
+
     final_belief = None
     for user_id in beliefs_by_user.keys():
         beliefs_by_user[user_id] = normalize_beliefs(beliefs_by_user[user_id])
-        user_score = userrankings.min_score(user_id)
+
         if final_belief == None:
+            user_score = userrankings.min_score(user_id)
             final_belief = map(lambda p: p*user_score, beliefs_by_user[user_id])
             continue
 
@@ -327,6 +372,11 @@ def determine_belief_from_data(id):
 
 def determine_trade_from_data(id):
     predicted_belief = determine_belief_from_data(id)
+
+    if predicted_belief == None:
+        # there wasn't enough data to make a stable
+        # prediction from trusted sources
+        return None
 
     return optimal_adjustment(id, predicted_belief)
 
@@ -348,11 +398,17 @@ def find_data_based_trading_opportunities():
     candidates = list(set(candidates))
     candidates.sort(key=lambda q_id: summarizequestions.by_id[q_id]['trade_count'], reverse=True)
 
-    for cand in candidates[0:20]:
+    for cand in candidates[0:25]:
         v = determine_trade_from_data(cand)
         if v:
             print v
 
-find_optimal_trading_opportunities()
-
-find_data_based_trading_opportunities()
+if __name__ == '__main__':
+    if len(sys.argv)>1:
+        if sys.argv[1]=='-b':
+            find_optimal_trading_opportunities(map(int, sys.argv[2:]), back_out=True)
+        else:
+            find_optimal_trading_opportunities(map(int, sys.argv[1:]))
+    else:
+        find_optimal_trading_opportunities()
+        find_data_based_trading_opportunities()
