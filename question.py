@@ -56,6 +56,13 @@ def max_tied_up(q):
 
     return maximum
 
+def cost_to_weight(cost):
+    if cost < 0.0:
+        return abs(cost) + 1.0
+    elif cost < 1.0:
+        return 1.0
+    else:
+        return 1.0 / cost
 
 def fetch_question(id):
     FILE = "q/%i" % (id,)
@@ -198,20 +205,15 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
         #print new_prob
         #prob = normalize_beliefs(new_prob)
         prob = new_prob
-        asset_change = map(outcome, actual_probability, prob)
+        asset_change = outcomes(actual_probability, prob)
         new_standings = map(lambda old,change: old+change, standing, asset_change)
         cost = min(map(lambda old,new: new-old, new_standings, standing))
-        if cost < 0.0:
-            cost = abs(cost) + 1.0
-        elif cost < 1.0:
-            cost = 1.0
-        else:
-            cost = 1.0 / cost
+        weight = cost_to_weight(cost)
 
         if back_out:
-            maximize_this = -cost / sum(map(lambda b,a: b*a, beliefs, new_standings))
+            maximize_this = -weight / sum(map(lambda b,a: b*a, beliefs, new_standings))
         else:
-            maximize_this = sum(map(lambda b,a: b*a, beliefs, new_standings)) / cost
+            maximize_this = sum(map(lambda b,a: b*a, beliefs, new_standings)) / weight
 
         return maximize_this
 
@@ -230,9 +232,6 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
                 new_probs.append(op/sum_of_others*leftover + op)
         return new_probs
 
-    def change_in_assets(old, new):
-        return map(outcome, old, new)
-
     result = copy.copy(actual_probability)
     best_score = expected_under(actual_probability)
     best_choice = -1
@@ -242,7 +241,7 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
             candidate_prob /= 100.0
             new_probs = move_prob_to(choice, candidate_prob)
 
-            asset_change = change_in_assets(actual_probability, new_probs)
+            asset_change = outcomes(actual_probability, new_probs)
             final_standing = map(lambda old, change: old+change, standing, asset_change)
             final_tied_up = min(final_standing)
             cost = min(final_standing) - min(standing)
@@ -261,7 +260,7 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
                 result = copy.copy(new_probs)
                 best_choice = choice
 
-    asset_change = change_in_assets(actual_probability, result)
+    asset_change = outcomes(actual_probability, result)
     final_standing = map(lambda old, change: old+change, standing, asset_change)
     final_tied_up = min(final_standing)
     credit = (min(final_standing) - min(standing))
@@ -352,13 +351,22 @@ def determine_belief_from_data(id):
                 # no sense including the below average
                 continue
 
+            #print trade['assets_per_option']
+            #print outcomes(trade['old_value_list'], trade['new_value_list'])
+            #print trade['old_value_list']
+            #print trade['new_value_list']
+            #print
+
+            cost = min(trade['assets_per_option'])
+            weight = cost_to_weight(cost)
+
             included_trades += 1
             if beliefs_by_user.has_key(user_id):
                 new = trade['new_value_list']
                 old = beliefs_by_user[user_id]
-                beliefs_by_user[user_id] = map(lambda x,y: x+y, new, old)
+                beliefs_by_user[user_id] = map(lambda x,y: x+y*weight, old, new)
             else:
-                beliefs_by_user[user_id] = trade['new_value_list']
+                beliefs_by_user[user_id] = map(lambda y: y*weight, trade['new_value_list'])
 
     if included_trades < 10 or len(beliefs_by_user.keys())<4:
         return None
