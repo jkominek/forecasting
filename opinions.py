@@ -45,7 +45,7 @@ o(365,  [ 0,    0,    0,    0,    0,    100], strong*5)
 o(395, yes(70), weak)
 
 # Will scientists create a fully air-transmissible, mammalian-infectious strain of avian influenza in a laboratory setting by the end of 2014?
-o(656, [1, 5], 0.1)
+o(656, [1, 5], 0.08)
 
 # Will Jupiter's Great Red Spot shrink below 9,000 miles in diameter before January 1, 2016?
 o(684, goes_to(no, 80, date(2014,5,1), date(2015,12,1)),
@@ -137,7 +137,7 @@ o(330, no(90), weak)
 o(102, yes(33), weak)
 
 # Will Apple integrate a sapphire crystal solar power screen in its new iPhone6, due to be released later in 2014?
-o(354, no(95), strong)
+o(354, no(95))
 
 # Will a VC-funded Bitcoin business initiate a public IPO by December 31, 2014?
 o(625, no(85), weak)
@@ -419,3 +419,6 @@ o(535, yes(50), weak)
 
 # In 2014, will the Arctic sea ice minimum day occur after September 15th?
 o(385, yes(50), weak)
+
+# Will a hurricane or tropical storm form in the Atlantic-Caribbean-Gulf of Mexico region in June 2014?
+o(408, yes(45.6), weak)
