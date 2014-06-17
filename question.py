@@ -116,6 +116,8 @@ def summarize_standings(id, ignore=0):
 
     standings = { }
 
+    market_standings = { }
+
     desired = x['trades']
     desired.sort(key=lambda t: t['created_at'])
     if ignore>0:
@@ -149,6 +151,7 @@ def summarize_standings(id, ignore=0):
         assets = trade['assets_per_option']
         for asset, i in zip(assets, range(0, len(assets))):
             user_standings[i] = user_standings.get(i, 0.0) + float(asset)
+            market_standings[i] = market_standings.get(i, 0.0) + float(asset)
 
     def potential_swing(user):
         s = standings[user].values()
@@ -159,6 +162,10 @@ def summarize_standings(id, ignore=0):
         t = map(lambda k: round(s[k]), sorted(s.keys()))
         p = map(lambda prob,pts: prob*pts, x['prob'], t)
         print "%15s %5i %5i %r" % (user, int(sum(t)), int(sum(p)), map(int,t))
+
+    t = map(lambda k: round(market_standings[k]), sorted(market_standings.keys()))
+    p = map(lambda prob,pts: prob*pts, x['prob'], t)
+    print "%15s %5i %5i %r" % ("!MARKET!", int(sum(t)), int(sum(p)), map(int,t))
 
 def nicelist(x):
     s = "["
