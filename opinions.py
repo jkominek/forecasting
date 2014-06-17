@@ -39,13 +39,13 @@ def no(percent):
     return [percent, 100-percent]
 
 # what happened to mh370
-o(365,  [ 0,    0,    0,    0,    0,    100], strong)
+o(365,  [ 0,    0,    0,    0,    0,    100], strong*5)
 
 # Will Nature retract one or more of the January 2014 papers by H. Obokata et al. describing stimulus-triggered acquisition of pluripotency (STAP)?
 o(395, yes(70), weak)
 
 # Will scientists create a fully air-transmissible, mammalian-infectious strain of avian influenza in a laboratory setting by the end of 2014?
-o(656, [1, 5], weak)
+o(656, [1, 5], 0.1)
 
 # Will Jupiter's Great Red Spot shrink below 9,000 miles in diameter before January 1, 2016?
 o(684, goes_to(no, 80, date(2014,5,1), date(2015,12,1)),
@@ -89,13 +89,13 @@ o(666, [0.1, 0.11, 0.12, 0.15, 1, 5],
   varying_strength(date(2014,9,1), date(2015,9,6)))
 
 # Will Google announce development of a smartwatch at or before the Google I/O 2014 Conference?
-o(672, yes(70))
+o(672, yes(66.666), weak)
 
 # Will there be at least one female winner of a Fields Medal in 2014?
-o(462, yes(20), weak)
+o(462, yes(20), 0.1)
 
 # Will Google make end-to-end PGP encryption a core feature in Gmail by August 2014?
-o(585, no(98), varying_strength(date(2014,6,1), date(2014,7,25), weak*1.5, strong))
+o(585, no(98), strong*2)
 
 # When will the Deque Conjecture be proven?
 o(26, [1, 10, 10, 10, 20], weak)
@@ -116,13 +116,13 @@ o(401, no(90), varying_strength(date(2014,6,5), date(2014,8,20), weak, strong))
 o(659, yes(33.333), weak)
 
 # Will the International Sun-Earth Explorer 3 be successfully commanded to fire its thrusters by researchers?
-o(643, yes(76), weak)
+o(643, yes(76))
 
 # Will the International Sun-Earth Explorer 3 start to collect data and send it to Earth?
 o(644, yes(65), weak)
 
 # Will NASA land a telepresence robot on Venus by 2020?
-o(653, no(98))
+o(653, no(98), strong*2)
 
 # When will UHD programming be available from Netflix on optical disc?
 o(587, [9, 20, 25, 46])
@@ -143,7 +143,7 @@ o(354, no(95), strong)
 o(625, no(85), weak)
 
 # When will a single confirmed exploitation of the Heartbleed bug result in exposure of personally identifiable information (PII) of more than 1 million users?
-o(539, [1, 1, 1, 1, 1, 50])
+o(539, [0.1, 0.1, 1, 1, 1, 50], 0.4)
 
 # Will quantum key distribution be integrated into a prototype mobile device by 1 January 2016?
 o(562, no(75), weak)
@@ -179,7 +179,7 @@ o(442, no(90), strong)
 o(534, no(90), varying_strength(date(2015,1,1), date(2016,12,1), weak, 2*strong))
 
 # Where will the Malaysia Airlines Flight MH370 be found?
-#o(364, [1, 1, 1, 1, 1, 1, 1000], strong)
+o(364, [1, 1, 1, 1, 1, 1, 1000], strong*5)
 
 # When will the first mass-produced multicopter, for human flight, be offered for sale?
 o(182, [1, 2, 3, 5])
@@ -203,10 +203,10 @@ o(312, [1, 100, 1, 1, 10], varying_strength(date(2014,1,1), date(2020,1,1), weak
 o(27, [1, 2, 3, 4, 50], varying_strength(date(2045,1,1), date(2050,1,1), weak, strong))
 
 # Which of the following changes will be reported about "Status and trends of linguistic diversity and numbers of speakers of indigenous languages" in the fourth edition of the Global Biodiversity Outlook report?
-o(99, [0.5, 10, 1, 0.1], weak*0.5)
+o(99, [0.5, 10, 1, 0.1], weak*0.25)
 
 # Will the NASA's Mars Atmosphere and Volatile Evolution (MAVEN) spacescraft launched on November 17, 2013 enter the Mars orbit by the end of September 2014?
-o(143, yes(95))
+o(143, yes(95), weak)
 
 # Will the silver nanowire ink touch sensitive screens being developed by 3M and Cambrios be in commercially available smartphones by the end of 2015?
 o(363, yes(33), weak)
@@ -221,7 +221,7 @@ o(685, yes(55), weak)
 o(421, no(51), varying_strength(date(2014,6,10), date(2014,12,31), strong, weak))
 
 # Will planet Kepler 62f be found to have water on its surface?
-o(608, no(40), weak/2.0)
+o(608, yes(40), weak/2.0)
 
 # Will a commercial building with perovskite solar cell windows be completed by the end of 2018? 
 o(329, goes_to(yes, 40, date(2014,6,1), date(2018,8,1)),
@@ -237,7 +237,7 @@ o(181, [1, 2, 3, 4, 5, 45], weak)
 o(686, yes(55), varying_strength(date(2014, 6, 1), date(2014,12,1)))
 
 # At its first launch, will Apple's iWatch include a sensor to measure blood glucose level non-invasively?
-o(687, no(66.666))
+o(687, no(80))
 
 # Will Google's glucose monitoring "smart" contact lenses get FDA approval by the end of 2016?
 o(688, no(49), varying_strength(date(2014,7,1), date(2015,7,1)))
@@ -247,29 +247,29 @@ o(453, goes_to(no, 66.666, date(2014,6,15), date(2017,10,1)),
   varying_strength(date(2014,8,1), date(2017,11,1)))
 
 # On June 2014, what will be the cores per socket of the Top 500 winner? 
-o(41, [1, 2, 20*0.8, 2, 1], strong)
+o(41, [1, 2, 20, 2, 1], strong)
 
 # On June 2014, what will be the geographic region of the Top 500 winner? 
-o(40, [2, 10*0.8, 1, 1, 1], strong)
+o(40, [2, 10, 1, 1, 1], strong)
 
 # On June 2014, what will be the vendor of the Top 500 winner? 
 o(39, [2, 2, 1, 1, 100], strong)
 
-# On June 2014, what will be the processor generation of the Top 500 winner? 
-o(42, [1, 2, 20*0.9, 1, 1], strong)
-
 
 # On November 2014, what will be the cores per socket of the Top 500 winner? 
-o(45, [1, 2, 20*.5, 2, 1], strong*0.55)
+o(45, [1, 2, 20*.8, 2, 1], strong*0.55)
 
 # On November 2014, what will be the geographic region of the Top 500 winner? 
 o(44, [2, 10, 1, 1, 1], strong*0.55)
 
 # On November 2014, what will be the vendor of the Top 500 winner? 
-o(43, [2, 3, 1, 1, 20*.5], strong*0.55)
+o(43, [2, 3, 1, 1, 20*.8], strong*0.55)
+
+# On June 2014, what will be the processor generation of the Top 500 winner? 
+o(42, [10, 5, 500, 10, 1], strong)
 
 # On November 2014, what will be the processor generation of the Top 500 winner? 
-o(46, [1, 2, 20*.5, 1, 1], strong*0.55)
+o(46, [10, 5, 150, 10, 1], 1.1)
 
 # Will the Axion Dark Matter Experiment detect dark matter axions by the end of 2014?
 o(128, no(95))
@@ -303,7 +303,7 @@ o(649, yes(90))
 o(696, [2, 3, 4, 3, 2, 1], weak)
 
 # On June 2014, what will be the Top 500 performance share by geographic region?
-performance = [1.1 * 120339438,
+performance = [1.10 * 120339438,
                1.11 * 72809408,
                1.08 * 31768483,
                1.08 * 11670158,
@@ -346,7 +346,7 @@ o(105, yes(28), weak)
 o(371, [5, 1, 2, 20, 5, 2, 20], weak)
 
 # Will the June 2014 TOP500 rankings announce that the performance of the #500 ranked supercomputer has exceeded 150 thousand Gflops/s?
-o(14, yes(10), 0.2)
+o(14, yes(10), 0.1)
 
 # Will the Mars Curiosity Rover discover organic matter on Mars-evidence that life exists or existed on the planet-by July 1, 2015?
 o(377, no(98))
@@ -358,10 +358,13 @@ o(136, [1, 9, 10, 10])
 o(135, yes(15), varying_strength(date(2014,6,15), date(2017,10,1)))
 
 # Will the same machine hold the #1 rank on the Top500 and Graph500 lists compiled in June 2014?
-o(12, yes(10))
+o(12, yes(10), weak)
 
 # On June 2014, what will be the (performance-weighted) gigaflops per core of the Top 500?
-o(73, [10, 100, 10, 1, 0])
+o(73, [10, 100, 10, 1, 0], 2*strong)
+
+# On NOV 2014, what will be the (performance-weighted) gigaflops per core of the Top 500? (177)
+o(177, [5, 80, 20, 1, 0], strong)
 
 # In the 2013 Annual Report from the National Poison Data System (NPDS), will analgesics be the number one substance class for exposures among adults in the US?
 o(226, yes(63.1), weak)
@@ -382,10 +385,10 @@ o(321, [0.096, 0.857, 0.026, 0, 0])
 o(11, [0, 4, 5, 0], weak)
 
 # Will Hewlett-Packard comprise at least 40% of the Vendors' System Share on the Top500 Supercomputers List compiled in June 2014?
-o(15, yes(50), 0.1)
+o(15, yes(50), 0.05)
 
 # When will 99% of the top 1 million web domains in the world be immune to Heartbleed? (538)
-o(538, [0.000, 0.000, 0.01, 0.02, 0.03, 0.95], 0.05)
+#o(538, [0.000, 0.000, 0.01, 0.02, 0.03, 0.95], 0.025)
 
 # Will Stanford's Folding@Home distributed computing project exceed 30 PetaFLOPS on July 1st 2014?
 o(563, yes(1), weak)
@@ -395,3 +398,24 @@ o(189, yes(0.9))
 
 # Will there be 15 or more named storms (including subtropical storms) in the Atlantic-Caribbean-Gulf of Mexico region during the 2014 hurricane season?
 o(410, yes(26), weak)
+
+# What will be the total U.S. cherry production during the 2013 marketing season, in thousands of tons? (119)
+o(119, [1, 2, 3, 4, 20, 5], weak)
+
+# When will floating wind turbines be used in a commercial offshore wind turbine farm?
+o(712, [1,2,3,4,5,6])
+
+# When will a prickless glucose monitor be commercially available to consumers?
+o(709, [5,6,6,7,7,4])
+
+# Will a new clean & jerk world record be set before or during the 2016 Olympic Games?
+o(711, yes(25), weak)
+
+# Will Huawei confirm allegations that "back doors" where installed on their computer hardware before being sold?
+o(623, yes(10), 0.1)
+
+# Will Google incorporate infrared vision into future Google Glass models by the end of 2017?
+o(535, yes(50), weak)
+
+# In 2014, will the Arctic sea ice minimum day occur after September 15th?
+o(385, yes(50), weak)
