@@ -29,24 +29,11 @@ def max_tied_up(q):
         settled_at = datetime.strptime(q['question']['settlement_at'][0:19], "%Y-%m-%dT%H:%M:%S")
 
     remaining = (settled_at - datetime.now()).total_seconds() / 86400.0
-    if remaining < 0:
-        maximum = 0
-    elif remaining < 1:
-        maximum = 1000.0
-    elif remaining < 2:
-        maximum = 700.0
-    elif remaining < 7:
-        maximum = 400.0
-    elif remaining < 14:
-        maximum = 200.0
-    elif remaining < 30:
-        maximum = 75.0
-    elif remaining < 90:
-        maximum = 50.0
-    elif remaining < 365.0:
-        maximum = 20.0
-    else:
-        maximum = 7.5
+
+    if remaining <= 0.0:
+        return 0
+
+    maximum = 1010.81*math.exp(-0.0107473*remaining)
 
     id = q['question']['id']
     if opinions.has_key(id):
@@ -54,13 +41,21 @@ def max_tied_up(q):
     else:
         maximum /= 3.0
 
+    if maximum > 1000.0:
+        maximum = 1000.0
+
+    if maximum < 1.0:
+        maximum = 1.0
+
+    #maximum /= 4.0
+
     return maximum
 
 def cost_to_weight(cost):
     if cost < 0.0:
         return abs(cost) + 1.0
     elif cost < 1.0:
-        return 1.0
+        return 0.5
     else:
         return 1.0 / cost
 
@@ -69,20 +64,20 @@ def fetch_question(id):
 
     need_fetch = False
     if not os.access(FILE, os.R_OK):
-        print "unfetched", id
+        #print "unfetched", id
         need_fetch = True
     else:
         data = json.load(open(FILE))
         if summarizequestions.by_id.has_key(id):
             if data['question']['updated_at'] < summarizequestions.by_id[id]['question']['updated_at']:
-                print "out of date", id
+                print "out of date", id, data['question']['name']
                 need_fetch = True
         else:
             # file there, but can't confirm age
             pass
 
     if need_fetch:
-        print "pulling from network"
+        print "pulling from network", id
         req = urllib2.Request("https://scicast.org/questions/show?question_id=%i&include_prob=True&include_cash=True&include_trades=True&include_comments=False&include_trade_ranges=True&include_recommendations=False" % (id,))
         req.add_header('Accept-encoding', 'gzip')
 
@@ -174,9 +169,14 @@ def nicelist(x):
     s += "]"
     return s
 
+ITER = 0
+
 from opinions import opinions, normalize_beliefs
 username = 'jkominek'
-def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None, standing=None):
+def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None, standing=None,
+                       prefer_silence=False):
+    global ITER
+
     x = fetch_question(id)
     if standing == None:
         standing = { }
@@ -193,27 +193,34 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
     if beliefs == None:
         beliefs = opinions[id][0]
     my_expected = sum(map(lambda b,a: b*a, beliefs, standing))
-    #print my_expected
     if actual_probability==None:
         actual_probability = x['prob']
     current_expected = sum(map(lambda b,a: b*a, actual_probability, standing))
-    #print current_expected
 
     tied_up_limit = max_tied_up(x)
 
-    def expected_under(new_prob):
-        #print new_prob
-        #prob = normalize_beliefs(new_prob)
+    def expected_under(new_prob, F=None):
         prob = new_prob
         asset_change = outcomes(actual_probability, prob)
         new_standings = map(lambda old,change: old+change, standing, asset_change)
         cost = min(map(lambda old,new: new-old, new_standings, standing))
-        weight = cost_to_weight(cost)
+
+        new_score = sum(map(lambda b,a: b*a, beliefs, new_standings))
+        old_score = sum(map(lambda b,a: b*a, beliefs, standing))
 
         if back_out:
-            maximize_this = -weight / sum(map(lambda b,a: b*a, beliefs, new_standings))
+            weight = cost_to_weight(cost)
+            maximize_this = -weight / (new_score - old_score)
         else:
-            maximize_this = sum(map(lambda b,a: b*a, beliefs, new_standings)) / weight
+            # first, maximize our final expected score
+            # then, maximize the credit we receive
+            final_improvement = (new_score - old_score)
+            if final_improvement > 0.0:
+                maximize_this = (1, cost > 0.0,
+                                 new_score / cost_to_weight(cost)) #min(new_standings)))
+            else:
+                maximize_this = (0, False, -numpy.inf)
+            #maximize_this = ((final_improvement + 1.0)**2.0) / cost_to_weight(cost)
 
         return maximize_this
 
@@ -229,12 +236,16 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
                 new_probs.append(candidate_prob)
             else:
                 op = actual_probability[i]
-                new_probs.append(op/sum_of_others*leftover + op)
+                if sum_of_others > 0.0:
+                    new_probs.append(op/sum_of_others*leftover + op)
+                else:
+                    new_probs.append(0.0)
         return new_probs
 
     result = copy.copy(actual_probability)
     best_score = expected_under(actual_probability)
     best_choice = -1
+    ITER += 1
     for choice in choices:
         sum_of_others = sum(actual_probability[0:choice] + actual_probability[choice+1:])
         for candidate_prob in range(1, 100):
@@ -276,7 +287,7 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
     for old, new in zip(actual_probability, result):
         if abs(old-new)>0.0099:
             feasible = True
-        elif abs(old-new)>0.002 and abs(credit)>5.0:
+        elif abs(old-new)>0.002 and abs(credit)>2.0:
             feasible = True
 
     if feasible and (final_tied_up < (-tied_up_limit)):
@@ -287,12 +298,15 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
     if not feasible:
         return None
 
+    suggesting_a_change = abs(actual_probability[best_choice] - result[best_choice]) > 0.001
+    estdeb = sum(map(lambda a,p: a*p, final_standing, beliefs)) / cost_to_weight(min(final_standing))
+
     s  =  "%s (%i)\n" % (x['question']['name'], x['question']['id'])
 
     s +=  "max tied up: " + str(tied_up_limit) + "\n"
     s +=  "      belief: " + nicelist(beliefs) + "\n"
     s +=  "    cur prob: " + nicelist(actual_probability) + "\n"
-    if actual_probability[best_choice] != result[best_choice]:
+    if suggesting_a_change:
         s +=  "              " + nicelist(indicator_list) + " " + x['question']['choices'][best_choice]['name'].strip() + "\n"
     s +=  " *** optimal: " + nicelist(result) + "\n"
     s +=  "\n"
@@ -305,11 +319,37 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
         s +=  "      credit: %.3f\n" % (credit,)
     s +=      "  curr score: %.3f\n" % (cur_new_score - cur_old_score,)
     s +=      " final score: %.3f\n" % (bel_new_score - bel_old_score,)
+    s +=      "     est/deb: %.3f\n" % (estdeb,)
+
+    my_final_score = bel_new_score - bel_old_score
 
     if back_out:
-        s += optimal_adjustment(id, beliefs=beliefs, back_out=False, actual_probability=result, standing=final_standing)
+        res = optimal_adjustment(id, beliefs=beliefs, back_out=False, actual_probability=result, standing=final_standing)
+        if res:
+            s += res[4]
+            my_final_score += res[0]
+            credit += res[1]
+            final_standing = res[2]
+    elif suggesting_a_change and len(beliefs)>2:
+        res = optimal_adjustment(id, beliefs=beliefs, back_out=False, actual_probability=result, standing=final_standing,
+                               prefer_silence=True)
+        if res:
+            s += res[4]
+            my_final_score += res[0]
+            credit += res[1]
+            final_standing = res[2]
 
-    return s
+    estdeb = sum(map(lambda a,p: a*p, final_standing, beliefs)) / cost_to_weight(min(final_standing))
+
+    if (not prefer_silence) or suggesting_a_change:
+        return (my_final_score, credit, final_standing, estdeb, s)
+    else:
+        return None
+
+def am_i_the_last_trade(q):
+    t = sorted(q['trades'], key=lambda t: t['created_at'])
+    #print t[0]['created_at'], t[-1]['created_at']
+    return t[-1]['user']['username'] == 'jkominek'
 
 def find_optimal_trading_opportunities(candidates=None, back_out=False):
     global FETCH_DELAY
@@ -322,10 +362,22 @@ def find_optimal_trading_opportunities(candidates=None, back_out=False):
     else:
         VERBOSE = True
 
+    # (my_final_score, credit, final_standing, estdeb, s)
+    output = [ ]
+
     for candidate in candidates:
-        v = optimal_adjustment(candidate, back_out=back_out)
-        if v:
+        if am_i_the_last_trade(fetch_question(candidate)):
+            continue
+        res = optimal_adjustment(candidate, back_out=back_out)
+        if res:
+            output.append(res)
+
+    output.sort(key=lambda x: x[3], reverse=True)
+
+    for score, credit, final_standing, estdeb, v in output:
+        if estdeb > 0.75:
             print v
+
     FETCH_DELAY = old_delay
     VERBOSE = False
 
@@ -377,6 +429,7 @@ def determine_belief_from_data(id):
 
         if final_belief == None:
             user_score = userrankings.min_score(user_id)
+            user_score -= 4000
             final_belief = map(lambda p: p*user_score, beliefs_by_user[user_id])
             continue
 
@@ -395,7 +448,7 @@ def determine_trade_from_data(id):
 
     return optimal_adjustment(id, predicted_belief)
 
-DO_NOT_TRUST_CONSENSUS = set([74, 112, 537, 164, 110])
+DO_NOT_TRUST_CONSENSUS = set([74, 112, 537, 164, 110, 287, 538])
 def find_data_based_trading_opportunities(candidates=[ ]):
     if len(candidates)==0:
         for q_id in summarizequestions.by_id.keys():
@@ -417,9 +470,18 @@ def find_data_based_trading_opportunities(candidates=[ ]):
         candidates.sort(key=lambda q_id: summarizequestions.by_id[q_id]['trade_count'], reverse=True)
         candidates = candidates#[:60]
 
-    for cand in candidates:
-        v = determine_trade_from_data(cand)
-        if v:
+    # (my_final_score, credit, final_standing, estdeb, s)
+    output = [ ]
+
+    for candidate in candidates:
+        res = determine_trade_from_data(candidate)
+        if res:
+            output.append(res)
+
+    output.sort(key=lambda x: x[3], reverse=True)
+
+    for score, credit, final_standing, estdeb, v in output:
+        if estdeb > 0.75:
             print v
 
 if __name__ == '__main__':
@@ -449,5 +511,6 @@ if __name__ == '__main__':
     else:
         if options.optimal or options.data_based==False:
             find_optimal_trading_opportunities(back_out=options.back_out)
+
         if options.data_based:
             find_data_based_trading_opportunities()
