@@ -255,13 +255,17 @@ def update_for_new_day():
     fillout_top(20)
     fetch_smattering()
     random_expansion()
+    dump_historical_plots()
 
+min_score_cache = { }
 def min_score(user_id):
-    c.execute("select min(score) from rankings where id=? and ?<=day",
-              (user_id, CURRENT_DAY - timedelta(7)))
-    score = c.fetchone()[0]
-    if score == None:
-        by_id(user_id)
-    c.execute("select min(score) from rankings where id=? and ?<=day",
-              (user_id, CURRENT_DAY - timedelta(7)))
-    return max(1.0, c.fetchone()[0])
+    if not min_score_cache.has_key(user_id):
+        c.execute("select min(score) from rankings where id=? and ?<=day",
+                  (user_id, CURRENT_DAY - timedelta(7)))
+        score = c.fetchone()[0]
+        if score == None:
+            by_id(user_id)
+        c.execute("select min(score) from rankings where id=? and ?<=day",
+                  (user_id, CURRENT_DAY - timedelta(7)))
+        min_score_cache[user_id] = max(1.0, c.fetchone()[0])
+    return min_score_cache[user_id]
