@@ -56,7 +56,7 @@ o(678, [1, 1, 1, 1, 1,
         1, 1, 1, 1, 1,
         1, 1, 1, 0.01, 0.1,
         0.01, 0.01, 0.01, 0.01, 0.01,
-        0.01, 0.01, 0.01, 0.001, 5])
+        0.01, 0.01, 0.01, 0.001, 26])
 
 # Will Virgin Galactic begin commercial flights aboard SpaceShipTwo by the end of 2014?
 o(670, no(60), varying_strength(date(2014,6,1), date(2014,11,1)))
@@ -215,7 +215,7 @@ o(363, yes(33), weak)
 o(311, yes(50), varying_strength(date(2014,6,1), date(2029,1,1)))
 
 # Will the trade price of Whole Milk Powder fall below $3000 per tonne by December 31, 2014?
-o(685, yes(55), weak)
+o(685, yes(15), weak)
 
 # (3) id 421 "Will the unit price of Chinese solar PV modules fall below 50 cents per watt in the US by the end of 2015?"
 o(421, no(51), varying_strength(date(2014,6,10), date(2014,12,31), strong, weak))
@@ -247,17 +247,17 @@ o(453, goes_to(no, 66.666, date(2014,6,15), date(2017,10,1)),
   varying_strength(date(2014,8,1), date(2017,11,1)))
 
 # On June 2014, what will be the cores per socket of the Top 500 winner? 
-o(41, [1, 2, 20, 2, 1], strong)
+o(41, [1, 2, 100, 2, 1], strong)
 
 # On June 2014, what will be the geographic region of the Top 500 winner? 
-o(40, [2, 10, 1, 1, 1], strong)
+o(40, [2, 100, 1, 1, 1], strong)
 
 # On June 2014, what will be the vendor of the Top 500 winner? 
 o(39, [2, 2, 1, 1, 100], strong)
 
 
 # On November 2014, what will be the cores per socket of the Top 500 winner? 
-o(45, [1, 2, 20*.8, 2, 1], strong*0.55)
+o(45, [1, 2, 20, 2, 1], strong*0.55)
 
 # On November 2014, what will be the geographic region of the Top 500 winner? 
 o(44, [2, 10, 1, 1, 1], strong*0.55)
@@ -421,4 +421,13 @@ o(535, yes(50), weak)
 o(385, yes(50), weak)
 
 # Will a hurricane or tropical storm form in the Atlantic-Caribbean-Gulf of Mexico region in June 2014?
-o(408, yes(45.6), weak)
+o(408, yes(40.8), weak)
+
+# Will the USPTO issue more than 750 nanotechnology class 977 patents in the first six months of 2014 (1/1/14-6/30/14)?
+o(185, yes(2), weak)
+
+# Will obesity be among the top five health-related keyword searches in Google in any month in 2014?
+o(188, yes(3), weak)
+
+# When will a classical algorithm be authored to solve 3-SAT faster than exp(o(n))?
+o(32, [0, 1, 2, 3, 6], weak)
