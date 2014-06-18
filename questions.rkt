@@ -30,23 +30,44 @@
 
   (hash-ref q-d id))
 
+(define/contract
+  (fetch-full-question q-or-qid #:question-database [q-d (question-database)])
+  (->* ((or/c natural-number/c question/c))
+       (#:question-database question-database/c)
+       question/c)
+
+  (let* ([qid (if (number? q-or-qid)
+		  q-or-qid
+		  (question-id q-or-qid))]
+	 [full
+	  (read-json
+	   (open-input-file
+	    (build-path "q" (number->string qid))))])
+    (for/fold ([start (fetch-question qid)])
+	      ([(k v) (in-hash full)])
+      (hash-set start k v))))
+
 (define/contract (all-question-ids
 		  #:question-database [q-d (question-database)])
   (->* () (#:question-database question-database/c) (listof natural-number/c))
 
   (hash-keys q-d))
 
-(provide fetch-question all-question-ids)
+(provide fetch-question fetch-full-question all-question-ids)
 
 (struct category [id name] #:transparent #:constructor-name make-category)
 
 (provide category-id category-name)
 
 (define (question-trade-count q)
-  (hash-ref q 'trade_count))
+  (if (hash-has-key? q 'trades)
+      (length (hash-ref q 'trades))
+      (hash-ref q 'trade_count)))
 
 (define (question-comment-count q)
-  (hash-ref q 'comment_count))
+  (if (hash-has-key? q 'comments)
+      (length (hash-ref q 'comments))
+      (hash-ref q 'comment_count)))
 
 (define (question-categories q)
   (map (lambda (js)
@@ -116,7 +137,6 @@
 	 question-challenge question-description question-visible?
 	 question-locked? question-choices question-choice
 	 question-trade-count question-comment-count)
-
 
 (define (choice-name c)
   (hash-ref c 'name))
