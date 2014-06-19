@@ -53,13 +53,11 @@
 
 (define (yes p)
   (let ([100-p (- 100 p)])
-    (lambda ()
-      (list 100-p p))))
+    (list 100-p p)))
 
 (define (no p)
   (let ([100-p (- 100 p)])
-    (lambda ()
-      (list p 100-p))))
+    (list p 100-p)))
 
 (define (goes-to f initial
 		 #:start start #:stop stop
@@ -124,3 +122,12 @@
 
 ; Will a wearable camera with speed of more than 60 frames per second at 4K resolution be commercially available by the end of 2015?
 (o 400 (yes 60) (varying-strength "2014-06-01" "2015-10-01"))
+
+; When will a metropolitain area of over 250,000 people wirelessly network all traffic signals and sensors so that an AI system can optimize 2-dimensional traffic flow in real-time?
+(o 636 '(1 10 10 10 10 10))
+
+; Will scientists create a fully air-transmissible, mammalian-infectious strain of avian influenza in a laboratory setting by the end of 2014?
+(o 656 '(1 2))
+
+; world produced 4.4 zettabytes in 2013. how much in 2014?                      
+(o 620 '(1 2 9 10 6) weak)

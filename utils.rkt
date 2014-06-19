@@ -19,18 +19,18 @@
 ; thing.
 (define/contract
   (maximum-points-tied-up
-   #:settled-at [settled-at distant-future])
-  (->* () (#:settled-at date?) (>=/c 0.0))
+   [settled-at distant-future])
+  (->* (date?) () (<=/c 0.0))
 
   (define days-remaining (date- settled-at (seconds->date (current-seconds))))
   (if (< days-remaining 0)
       0.0
 
       (let ([v (* 1010.81 (exp (* -0.0107473 days-remaining)))])
-	(cond
-	 [(> 1000.0 v) 1000.0]
-	 [(< v 1.0) 1.0]
-	 [else v]))))
+      	(- (cond
+	    [(> v 1000.0) 1000.0]
+	    [(< v 1.0) 1.0]
+	    [else v])))))
 
 (define log2 (log 2))
 ; Robin Hanson's LMSR formula, but with the probability
@@ -54,7 +54,32 @@
   
   (map lmsr-outcome start stop))
 
+(define/contract
+  (shift-choice-probability probabilities choice new-value)
+  (-> (listof (real-in 0.0 1.0))
+      natural-number/c
+      (real-in 0 1)
+      (listof (real-in 0.0 1.0)))
+
+  ; is this right? algebra is hard right now
+  (define leftover (- (list-ref probabilities choice) new-value))
+  (define inverse-sum-of-unspecified-probabilies
+    (/ (for/fold ([sum 0.0])
+         ([p probabilities]
+          [i (in-naturals)])
+         (if (= i choice)
+             sum
+             (+ sum p)))))
+  (for/list ([p probabilities]
+             [i (in-naturals)])
+    (if (= i choice)
+        new-value
+        (if (> inverse-sum-of-unspecified-probabilies 0.0)
+            (+ p (* p leftover inverse-sum-of-unspecified-probabilies))
+            0.0))))
+  
 (provide normalize-probabilities
 	 maximum-points-tied-up
          lmsr-outcome
-         lmsr-outcomes)
+         lmsr-outcomes
+         shift-choice-probability)

@@ -1,0 +1,35 @@
+Development roadmap
+
+1st Generation
+- Python
+- Fetched data on questions, showing me new questions and simplistically
+  finding trading opportunities
+
+2nd Generation
+- Python
+- Attempts to find optimal trades, for ill-defined definitions of optimal,
+  based on manually determined outcome beliefs
+- Can look at trading history and trader scores to automatically determine
+  a plausible belief without input. Relies on the fact that we're in a
+  prediction market which is currently inefficient.
+
+3rd Generation
+- Switch to Racket
+- Plan is to implement the same functionality as 2nd Gen
+- Better SW engineering
+- Provide tools for feedback (plots!) on trading opportunities for each
+  question
+
+4th Generation
+- Hopefully determine the nature of the various "optimal" trades based
+  on feedback from 3rd Generation. Provide those as defaults.
+- Allow trading strategies to be specified on a per-question basis
+
+5th Generation
+- Account for "time value of points"
+- Automatic determination of appropriate trading strategies depending
+  on the question
+- Fancy user interface?
+
+6th Generation
+???

@@ -138,12 +138,26 @@
   
   (hash-ref q 'trades))
 
+(define/contract (question-user-assets q user-name-or-id)
+  (-> jsexpr? (or/c string? natural-number/c) (listof real?))
+  (for/fold ([assets (map (lambda x 0.0) (question-probability q))])
+    ([trade (question-trades q)])
+    (let ([user (trade-user trade)])
+      (if (equal? user-name-or-id
+                  ((if (number? user-name-or-id)
+                       user-id
+                       user-name)
+                   user))
+          (map + assets (trade-assets trade))
+          assets))))
+
 (provide question-categories question-name question-short-name question-id
 	 question-probability question-keywords question-updated-at
 	 question-settlement-at question-created-at question-probability-at
 	 question-challenge question-description question-visible?
 	 question-locked? question-choices question-choice
-	 question-trade-count question-comment-count question-trades)
+	 question-trade-count question-comment-count question-trades
+         question-user-assets)
 
 (define (choice-name c)
   (hash-ref c 'name))

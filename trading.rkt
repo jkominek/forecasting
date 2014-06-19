@@ -2,15 +2,17 @@
 
 (require math
          racket/contract
+         racket/sequence
+         racket/string
+         (only-in racket/list last)
+         plot
          (planet bzlib/date/plt)
          (file "/home/jkominek/forecasting/questions.rkt")
          (file "/home/jkominek/forecasting/rankings.rkt")
          (file "/home/jkominek/forecasting/opinions.rkt")
          (file "/home/jkominek/forecasting/utils.rkt")
+         srfi/54
          )
-
-(question-database
- (load-question-database "/home/jkominek/forecasting/tiny.json"))
 
 (define (cost->weight cost)
   (cond
@@ -18,3 +20,343 @@
     [(< cost 1) 1]
     [else 1]))
 
+(define
+  (maximize-probability-adjustment
+   #:probabilities initial-probabilities
+   #:function f
+   #:comparison [> >])
+   
+  ; these are all the choices which we'll consider adjusting.
+  ; in the binary case, we only need to do one. otherwise we
+  ; need to try adjusting all of them
+  (define indexes
+    (if (= (length initial-probabilities) 2)
+        '(1)
+        (sequence->list (in-range 0 (length initial-probabilities)))))
+
+  ; loop over every choice, and all the possible new probabilities
+  ; for it. compute the function we're maximizing, and check to see
+  ; if the new set of probabilities should replace the old
+  (for*/fold ([new-probabilities initial-probabilities]
+              [maximized-value (f initial-probabilities #:initial #t)])
+    ([choice indexes]
+     [new-probability (in-range 1/100 1 1/100)])
+    (let* ([shifted-probabilities
+            (shift-choice-probability initial-probabilities choice
+                                      (exact->inexact new-probability))]
+           [v (f shifted-probabilities)])
+      ; we'll let f return void so it can say "screw those options, i don't even want to vote"
+      (if (and (not (void? v))
+               (> v maximized-value))
+          (values shifted-probabilities v)
+          (values new-probabilities maximized-value)))))
+
+(define (utility-function
+         #:beliefs beliefs
+         #:assets initial-assets
+         #:initial-probabilities initial-probabilities
+         #:debt-limit [debt-limit 0])
+  ; this is how much the market is currently holding onto
+  ; until question resolution, initially
+  (define initial-debt (apply min initial-assets))
+  ; this is how much we expect to earn (probabilistically)
+  ; upon question resolution, initially
+  (define initial-expected-earnings (apply + (map * beliefs initial-assets))) 
+
+  (lambda (new-probabilities #:initial [initial #f])
+    (let* ([asset-change (lmsr-outcomes initial-probabilities new-probabilities)]
+           [new-assets (map + initial-assets asset-change)]
+           ; this is the amount the market will hold onto until
+           ; resolution if we make this trade
+           [new-debt (apply min new-assets)]
+           ; this is how much the market will refund us if we
+           ; make this trade
+           [credit (- new-debt initial-debt)]
+           ; this is how much we expect to earn (probabilistically)
+           ; upon question resolution, if we make this trade
+           [new-expected-earnings
+            (apply + (map * beliefs new-assets))]
+           ; change in expected earnings
+           [expected-earnings-improvement
+            (- new-expected-earnings initial-expected-earnings)])
+      
+      ; check that we're actually improving things in the end
+      (if (or initial
+              (and (> expected-earnings-improvement 0)
+                   (>= new-debt debt-limit)))
+          ; if so
+          (list
+           ; if we can get a nontrivial credit, that's better
+           ; than going further into debt
+           (if (> expected-earnings-improvement 1.0) 1 0)
+           ; how much we expect to make on resolution, relative
+           ; to how much risk our new position has
+           (/ new-expected-earnings
+              (cost->weight (apply min new-assets)))
+           ; finally, just how much debt we'll be in
+           (apply min new-assets))
+          
+          ; this is the "we're making things worse" case. fuck it
+          (void)))))
+
+(define (simple-adjustable
+         attribute)
+  (lambda (#:beliefs beliefs
+           #:assets initial-assets
+           #:initial-probabilities initial-probabilities
+           #:debt-limit [debt-limit 0])
+    ; this is how much the market is currently holding onto
+    ; until question resolution, initially
+    (define initial-debt (apply min initial-assets))
+    ; this is how much we expect to earn (probabilistically)
+    ; upon question resolution, initially
+    (define initial-expected-earnings (apply + (map * beliefs initial-assets))) 
+    
+    (lambda (new-probabilities #:initial [initial #f])
+      (let* ([asset-change (lmsr-outcomes initial-probabilities new-probabilities)]
+             [new-assets (map + initial-assets asset-change)]
+             ; this is the amount the market will hold onto until
+             ; resolution if we make this trade
+             [new-debt (apply min new-assets)]
+             ; this is how much the market will refund us if we
+             ; make this trade
+             [credit (- new-debt initial-debt)]
+             ; this is how much we expect to earn (probabilistically)
+             ; upon question resolution, if we make this trade
+             [new-expected-earnings
+              (apply + (map * beliefs new-assets))]
+             ; change in expected earnings
+             [expected-earnings-improvement
+              (- new-expected-earnings initial-expected-earnings)])
+        
+        (if (and (< new-debt debt-limit) (not initial))
+            (void)
+            (cond
+              [(equal? attribute 'curr-score)
+               (- (apply + (map * new-assets new-probabilities))
+                  (apply + (map * initial-assets initial-probabilities)))]
+              [(equal? attribute 'final-score)
+               expected-earnings-improvement]
+              [(equal? attribute 'credit)
+               credit]
+              [(equal? attribute '-debt)
+               (- new-debt)]
+              [else (error "unknown attribute" attribute)])
+            )))))
+
+(define (comparison-function as bs)
+  (for/fold ([o #t])
+    ([a as]
+     [b bs])
+    (and o (> a b))))
+
+(define (find-optimal-trade
+         utility-function
+         comparison-function
+         #:assets assets
+         #:debt-limit debt-limit
+         #:initial-probabilities initial-probabilities
+         #:beliefs beliefs)
+  (define-values
+    (new-probabilities utility)
+    (maximize-probability-adjustment
+     #:probabilities initial-probabilities
+     #:function (utility-function
+                 #:beliefs beliefs
+                 #:assets assets
+                 #:initial-probabilities initial-probabilities
+                 #:debt-limit debt-limit)
+     #:comparison comparison-function))
+  new-probabilities)
+
+(define (find-optimal-trade-sequence
+         utility-function comparison-function
+         #:assets initial-assets
+         #:debt-limit debt-limit
+         #:beliefs beliefs
+         #:initial-probabilities initial-probabilities
+         #:trade-limit [trade-limit 10])
+  (let/ec done
+    (when (= trade-limit 0)
+      (done '()))
+    (define next-trade (find-optimal-trade utility-function comparison-function
+                                           #:assets initial-assets #:beliefs beliefs
+                                           #:initial-probabilities initial-probabilities
+                                           #:debt-limit debt-limit))
+    (when (equal? initial-probabilities next-trade)
+      (done '()))
+    (define new-assets (map + initial-assets (lmsr-outcomes initial-probabilities next-trade)))
+    (cons next-trade
+          (find-optimal-trade-sequence
+           utility-function comparison-function
+           #:assets new-assets #:beliefs beliefs
+           #:initial-probabilities next-trade
+           #:debt-limit debt-limit
+           #:trade-limit (sub1 trade-limit)))))
+
+(define (pretty-probability-list l)
+  (format "[~a ]" (string-join (map (lambda (v) (cat (* 100 v) 5 1. 'inexact)) l))))
+(define (pretty-asset-list l)
+  (format "[~a ]" (string-join (map (lambda (v) (cat (exact-round v) 5)) l))))
+(define (pretty-string-list l)
+  (format "[~a ]" (string-join l)))
+
+(define roundy-probabilities
+  (map exact->inexact (sequence->list (in-range 1/100 1 1/100))))
+
+(define (summarize-effect-of-trades
+         question new-probabilities-list
+         #:beliefs [beliefs #f]
+         #:user-name my-user-name)
+  (define initial-probabilities (question-probability question))
+  (define initial-assets (question-user-assets question my-user-name))
+  (define Δassets
+    (for/list ([from (cons initial-probabilities new-probabilities-list)]
+               [to new-probabilities-list])
+       (lmsr-outcomes from to)))
+  (define-values (reversed-assets-per-trade ignore)
+    (for/fold ([assets '()]
+               [initial initial-assets])
+      ([Δ Δassets])
+      (let ([new (map + Δ initial)])
+        (values (cons new assets)
+                new))))
+  (define assets-per-trade (reverse reversed-assets-per-trade))
+  (define credit (- (apply min (last assets-per-trade)) (apply min initial-assets)))
+  
+  (define initial-current-score (apply + (map * initial-assets initial-probabilities)))
+  (define new-current-score (apply + (map * (last assets-per-trade) (last new-probabilities-list))))
+  
+  (string-join
+   (list
+    (cat "debt limit:" 15)
+    (cat (maximum-points-tied-up (question-settlement-at question)))
+    "\n"
+    (cat "belief:" 15)
+    (if beliefs
+        (pretty-probability-list beliefs)
+        " ? ")
+    "\n"
+    (cat "cur prob:" 15)
+    (pretty-probability-list initial-probabilities)
+    (cat "cred" 6)
+    (cat "curr" 6)
+    (if beliefs
+        (cat "fin" 6)
+        "")
+    "\n"
+    (for/fold ([s ""])
+      ([from (cons initial-probabilities new-probabilities-list)]
+       [to new-probabilities-list]
+       [old-assets (cons initial-assets assets-per-trade)]
+       [new-assets assets-per-trade]
+       [id (in-range 1 50)])
+      (string-join
+       (list s
+             (cat "" 15)
+             (pretty-string-list (for/list ([p to])
+                                   (if (member p roundy-probabilities)
+                                       "  ↓  " "     ")))
+             "\n"
+             (cat id 14) " "
+             (pretty-probability-list to)
+             " "
+             (cat (- (apply min new-assets) (apply min old-assets)) 5 -1.)
+             " "
+             (cat (- (apply + (map * to new-assets)) (apply + (map * from old-assets))) 5 -1.)
+             " "
+             (if beliefs
+                 (cat (- (apply + (map * beliefs new-assets)) (apply + (map * beliefs old-assets))) 5 -1.)
+                 "")
+             "\n")
+       ""))
+    (cat "orig assets:" 15)
+    (pretty-asset-list initial-assets)
+    "\n"
+    (cat "Δ assets:" 15)
+    (pretty-asset-list (map - (last assets-per-trade) initial-assets))
+    "\n"
+    (cat "final assets:" 15)
+    (pretty-asset-list (last assets-per-trade))
+    "\n"
+    (if (> credit 0)
+        (string-join (list (cat "credit:" 15) (cat credit 8 -2.)) "")
+        (string-join (list (cat "debit:" 15) (cat (- credit) 8 -2.)) ""))
+    "\n"
+    (cat "curr score:" 15)
+    (cat (- new-current-score initial-current-score) 8 -2.)
+    "\n"
+    (if beliefs
+        (let* ([initial-final-score (apply + (map * initial-assets beliefs))]
+               [new-final-score (apply + (map * (last assets-per-trade) beliefs))])
+          (string-join
+           (list (cat "final score:" 15)
+                 (cat (- new-final-score initial-final-score) 8 -2.)
+                 "\n") ""))
+        "")
+    ) ""))
+
+(define
+  (generate-choice-renderers
+   #:probabilities initial-probabilities
+   #:function f)
+  
+  ; these are all the choices which we'll consider adjusting.
+  ; in the binary case, we only need to do one. otherwise we
+  ; need to try adjusting all of them
+  (define indexes
+    (if (= (length initial-probabilities) 2)
+        '(1)
+        (sequence->list (in-range 0 (length initial-probabilities)))))
+
+  ; loop over every choice, and all the possible new probabilities
+  ; for it. compute the function we're maximizing, and check to see
+  ; if the new set of probabilities should replace the old
+  (for/list ([choice indexes])
+    (let ([new-f (lambda (new-probability)
+                   (let ([shifted-probabilities
+                          (shift-choice-probability initial-probabilities choice
+                                                    (exact->inexact new-probability))])
+                     (let ([v (f shifted-probabilities)])
+                       (if (void? v)
+                           +nan.0
+                           v))))])
+      (function new-f))))
+
+(define (plot-searches question fs
+                       #:user-name my-user-name
+                       #:debt-limit [debt-limit (maximum-points-tied-up (question-settlement-at question))]
+                       #:beliefs [beliefs (opinion-beliefs (get-opinion (question-id question)))])
+  (define renderers
+    (for/list ([i (in-naturals)]
+               [f fs])
+      (line-color (+ 2 i))
+      (generate-choice-renderers
+       #:probabilities (question-probability question)
+       #:function (f #:beliefs beliefs
+                     #:assets (question-user-assets question my-user-name)
+                     #:initial-probabilities (question-probability question)
+                     #:debt-limit debt-limit))))
+
+  (parameterize
+      ([plot-x-ticks (ticks (linear-ticks-layout)
+                            (lambda (lower upper preticks)
+                              (for/list ([pretick preticks])
+                                (cat (* 100 (pre-tick-value pretick))))))])
+    (for/list ([i (in-range 0 (length (car renderers)))])
+      (plot (map (lambda (rs) (list-ref rs i)) renderers)
+            #:x-min 1/100
+            #:x-max 99/100))))
+
+(provide utility-function
+         simple-adjustable
+         comparison-function
+ 
+         find-optimal-trade
+         find-optimal-trade-sequence
+         
+         summarize-effect-of-trades
+         
+         generate-choice-renderers
+         plot-searches
+         )
