@@ -443,10 +443,13 @@ o(32, [0, 1, 2, 3, 6], weak)
 o(566, [1, 10, 11, 10, 8], weak)
 
 # world produced 4.4 zettabytes in 2013. how much in 2014?
-o(620, [1, 2, 10, 10, 3], weak)
+o(620, [1, 2, 9, 10, 6], weak)
 
 # Will the Mars Curiosity Rover discover organic matter on Mars by September 1, 2014?
 o(127, no(100))
 
 # which smallsat company will be the first to provide daily re-imaging of the earth?
 o(714, [40, 100, 10, 75, 60, 50])
+
+# When the consumer version of Google Glass is released to the general public, what will its price be? 
+o(399, [1, 8, 4])
