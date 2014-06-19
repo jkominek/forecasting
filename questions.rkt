@@ -96,7 +96,10 @@
   (read-iso8601 (hash-ref (hash-ref q 'question) 'updated_at)))
 
 (define (question-settlement-at q)
-  (read-iso8601 (hash-ref (hash-ref q 'question) 'settlement_at)))
+  (let ([v (hash-ref (hash-ref q 'question) 'settlement_at)])
+    (if (string? v)
+	(read-iso8601 v)
+	#f)))
 
 (define (question-created-at q)
   (read-iso8601 (hash-ref (hash-ref q 'question) 'created_at)))

@@ -20,6 +20,12 @@
     [(< cost 1) 1]
     [else 1]))
 
+; We can't just through a full strength functionminimizer at
+; this because we're very specifically constrained by the user
+; interface of the web site. (for now?) We can only choose the
+; new value of one choice at a time (all others are determined
+; from there based on their past value) and it has to be
+; (in-range 1/100 1 1/100)
 (define
   (maximize-probability-adjustment
    #:probabilities initial-probabilities
@@ -137,10 +143,23 @@
                   (apply + (map * initial-assets initial-probabilities)))]
               [(equal? attribute 'final-score)
                expected-earnings-improvement]
+              [(equal? attribute 'final+assetinc)
+               (if (> (apply + asset-change) 0)
+                   expected-earnings-improvement
+                   -1000)]
               [(equal? attribute 'credit)
                credit]
               [(equal? attribute '-debt)
                (- new-debt)]
+              [(equal? attribute 'final/-debt)
+               (/ new-expected-earnings
+                  (if (< new-debt 0.0)
+                      (+ 1.0 (abs new-debt))
+                      1.0))]
+              [(equal? attribute 'total-positive-assets)
+               (for/fold ([sum 0.0]) ([asset new-assets]) (+ sum (if (> asset 0.0) asset 0)))]
+              [(equal? attribute 'total-assets)
+               (apply + new-assets)]
               [else (error "unknown attribute" attribute)])
             )))))
 
@@ -292,7 +311,10 @@
           (string-join
            (list (cat "final score:" 15)
                  (cat (- new-final-score initial-final-score) 8 -2.)
-                 "\n") ""))
+                 "\n"
+		 (cat "exp earnings:" 15)
+		 (cat new-final-score 8 -2.)
+		 "\n") ""))
         "")
     ) ""))
 

@@ -43,12 +43,24 @@
   [("--final-score") "Maximize final score"
                      (strategy (simple-adjustable 'final-score))
                      (strategy> >)]
+  [("--final+assetinc") "Maximize final score subject to requiring an asset increase"
+                        (strategy (simple-adjustable 'final+assetinc))
+                        (strategy> >)]
   [("--credit") "Maximize transaction credit"
                 (strategy (simple-adjustable 'credit))
                 (strategy> >)]
   [("--debt") "Minimize final debt"
               (strategy (simple-adjustable '-debt))
               (strategy> >)]
+  [("--final/debt") "Maximize expected final score / debt"
+                    (strategy (simple-adjustable 'final/-debt))
+                    (strategy> >)]
+  [("--total-posassets") "Maximize sum of positive assets"
+                         (strategy (simple-adjustable 'total-positive-assets))
+                         (strategy> >)]
+  [("--total-assets") "Maximize sum of assets"
+                      (strategy (simple-adjustable 'total-assets))
+                      (strategy> >)]
   
   #:args raw-question-ids
   (question-ids (map string->number raw-question-ids))
@@ -56,9 +68,10 @@
 
 (question-database (load-question-database (question-database-path)))
 
+(define *bulk* #f)
 (when (null? (question-ids))
-  (printf "need specific question ids for now~n")
-  (exit)
+  (question-ids (get-all-opinions))
+  (set! *bulk* #t)
   )
 
 (when (flip-optimization)
@@ -81,11 +94,14 @@
        ))
     
     (if (empty? trade-sequence)
-        (printf "nothing to do on ~a~n" q-id)
+	(when (not *bulk*)
+	  (printf "nothing to do on ~a~n" q-id))
     
-        (display
-         (summarize-effect-of-trades
-          q trade-sequence
-          #:user-name (my-user-name)
-          #:beliefs (opinion-beliefs (get-opinion (question-id q))))))
+        (printf "(~a) ~a~n~a~n"
+		(question-id q)
+		(question-name q)
+		(summarize-effect-of-trades
+		 q trade-sequence
+		 #:user-name (my-user-name)
+		 #:beliefs (opinion-beliefs (get-opinion (question-id q))))))
     ))

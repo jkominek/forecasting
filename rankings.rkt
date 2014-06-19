@@ -46,14 +46,14 @@
     (reverse l)))
 
 (define flip-transform 
-  (make-axis-transform (linear-scale 2))) ;(invertible-function - -)))
+  (invertible-function - -))
 
 (define (plot-ranks)
-  (parameterize ([plot-y-transform flip-transform]
+  (parameterize (;[plot-y-ticks (ticks-scale (plot-y-ticks)
+                 ;                           flip-transform)]
+                 ;[plot-y-transform (make-axis-transform flip-transform)]
 		 [plot-x-ticks (date-ticks)])
     (plot (map lines (retrieve-history 'rank))
-	  #:y-min 0
-	  #:y-max 2000
 	  )))
 
 (define (plot-scores)

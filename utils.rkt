@@ -20,17 +20,19 @@
 (define/contract
   (maximum-points-tied-up
    [settled-at distant-future])
-  (->* (date?) () (<=/c 0.0))
+  (->* ((or/c date? #f)) () (<=/c 0.0))
 
-  (define days-remaining (date- settled-at (seconds->date (current-seconds))))
-  (if (< days-remaining 0)
-      0.0
-
-      (let ([v (* 1010.81 (exp (* -0.0107473 days-remaining)))])
-      	(- (cond
-	    [(> v 1000.0) 1000.0]
-	    [(< v 1.0) 1.0]
-	    [else v])))))
+  (if settled-at
+      (let ([days-remaining
+	     (date- settled-at (seconds->date (current-seconds)))])
+	(if (< days-remaining 0)
+	    0.0
+	    (let ([v (* 1010.81 (exp (* -0.0107473 days-remaining)))])
+	      (- (cond
+		  [(> v 1000.0) 1000.0]
+		  [(< v 1.0) 1.0]
+		  [else v])))))
+      -1.0))
 
 (define log2 (log 2))
 ; Robin Hanson's LMSR formula, but with the probability
