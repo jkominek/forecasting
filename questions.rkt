@@ -176,7 +176,7 @@
   
   (hash-ref t 'assets_per_option))
 
-(provide trade-created-at trade-old-values trade-new-values trade-assets)
+(provide trade-user trade-created-at trade-old-values trade-new-values trade-assets)
 
 (define/contract (user-name u)
   (-> jsexpr? string?)
