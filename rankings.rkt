@@ -8,7 +8,7 @@
 (define conn (sqlite3-connect #:database "/home/jkominek/forecasting/rankings.db"))
 
 (define/contract
-  (minimum-score user)
+  (user-minimum-score user)
   (-> (or/c natural-number/c
 	    (hash/c symbol? any/c))
       real?)
@@ -21,9 +21,9 @@
 		  user-id)])
     (if (number? score)
 	score
-	(error "minimum-score isn't yet smart enough to fetch new data"))))
+	(error "user-minimum-score isn't yet smart enough to fetch new data"))))
 
-(provide minimum-score)
+(provide user-minimum-score)
 
 (define
   (retrieve-history [type 'rank])

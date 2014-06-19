@@ -10,7 +10,7 @@
 (define question/c jsexpr?)
 
 (define/contract
-  (load-database path)
+  (load-question-database path)
   (-> path-string? question-database/c)
 
   (let ([raw-json (read-json (open-input-file path))])
@@ -22,7 +22,9 @@
   question-database
   (parameter/c (hash/c natural-number/c jsexpr?))
 
-  (make-parameter (load-database "data.json")))
+  (make-parameter #f))
+
+(provide question-database load-question-database)
 
 (define/contract
   (fetch-question id #:question-database [q-d (question-database)])
@@ -131,12 +133,17 @@
 
   (list-ref (question-choices q) i))
 
+(define/contract (question-trades q)
+  (-> jsexpr? (listof jsexpr?))
+  
+  (hash-ref q 'trades))
+
 (provide question-categories question-name question-short-name question-id
 	 question-probability question-keywords question-updated-at
 	 question-settlement-at question-created-at question-probability-at
 	 question-challenge question-description question-visible?
 	 question-locked? question-choices question-choice
-	 question-trade-count question-comment-count)
+	 question-trade-count question-comment-count question-trades)
 
 (define (choice-name c)
   (hash-ref c 'name))
@@ -145,4 +152,41 @@
   (hash-ref c 'is_locked))
 
 (provide choice-name choice-locked?)
+
+(define/contract (trade-user t)
+  (-> jsexpr? jsexpr?)
   
+  (hash-ref t 'user))
+
+(define (trade-created-at t)
+  (read-iso8601 (hash-ref t 'created_at)))
+
+(define (trade-old-values t)
+  (-> jsexpr? (listof (between/c 0.0 1.0)))
+  
+  (hash-ref t 'old_value_list))
+
+(define (trade-new-values t)
+  (-> jsexpr? (listof (between/c 0.0 1.0)))
+  
+  (hash-ref t 'new_value_list))
+
+(define (trade-assets t)
+  (-> jsexpr? (listof number?))
+  
+  (hash-ref t 'assets_per_option))
+
+(provide trade-created-at trade-old-values trade-new-values trade-assets)
+
+(define/contract (user-name u)
+  (-> jsexpr? string?)
+  
+  (hash-ref u 'username))
+
+(define/contract (user-id u)
+  (-> jsexpr? natural-number/c)
+  
+  (hash-ref u 'id))
+
+(provide user-name user-id)
+

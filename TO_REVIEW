@@ -1,0 +1,132 @@
+out of date 344 When will the IPv6 traffic measured by Google surpass 4%?
+pulling from network 344
+fetching
+not found; faking
+out of date 103 Will any government officially accept a digital currency for circulation in their country in 2014?
+pulling from network 103
+out of date 661 What will be the Darkcoin / Bitcoin exchange rate at the end of June 2014?
+pulling from network 661
+fetching
+not found; faking
+out of date 180 How many teams competing in the Nokia Sensing XChallenge will receive distinguished awards?
+pulling from network 180
+out of date 645 Which team will win the 2014 AUVSI RoboBoat Competition?
+pulling from network 645
+out of date 335 What percentage of the US female population aged 13-17 will be vaccinated against HPV by the end of 2013?
+pulling from network 335
+out of date 127 Will the Mars Curiosity Rover discover organic matter on Mars by September 1, 2014?
+pulling from network 127
+out of date 160 Will at least one-third of worldwide nanotechnology patent documents published in the first half of 2014 have a Chinese priority?
+pulling from network 160
+out of date 140 Who will win the DARPA Robotics Challenge Finals in 2014?
+pulling from network 140
+out of date 16 Will the June 2014 TOP500 rankings announce that the performance of the #1 ranked supercomputer has exceeded 50 million Gflops/s?
+pulling from network 16
+out of date 188 Will obesity be among the top five health-related keyword searches in Google in any month in 2014?
+pulling from network 188
+out of date 185 Will the USPTO issue more than 750 nanotechnology class 977 patents in the first six months of 2014 (1/1/14-6/30/14)?
+pulling from network 185
+out of date 399 When the consumer version of Google Glass is released to the general public, what will its price be?
+pulling from network 399
+out of date 369 Which team will win the DARPA Robotics Challenge Finals in 2014?
+pulling from network 369
+out of date 121 What will be the total U.S. almond utilized production during the 2013 marketing season, in thousands of tons?
+pulling from network 121
+out of date 75 In which branch will the 2014 Nobel Prize in Chemistry be awarded?
+pulling from network 75
+out of date 545 What will be the 2013 estimated vaccination coverage of HPV for females aged 13-17 in states with historically 'somewhat low' HPV vaccination coverage?
+pulling from network 545
+out of date 202 Will the Bcl3-inhibiting drug, claimed to reduce the spread of breast cancer cells, enter clinical trials before the end of July 2014?
+pulling from network 202
+pulling from network 544
+pulling from network 677
+Will the June 2014 TOP500 rankings announce that the performance of the #1 ranked supercomputer has exceeded 50 million Gflops/s? (16)
+max tied up: 304.738180912
+      belief: [0.697, 0.303]
+    cur prob: [0.892, 0.108]
+              [         ↓  ] True
+ *** optimal: [0.860, 0.140]
+
+ orig assets: [6.725, 2.226]
+    Δ assets: [-5.348, 38.076]
+final assets: [1.377, 40.302]
+       debit: 0.849
+  curr score: 0.586
+ final score: 7.791
+     est/deb: 13.155
+
+Will the USPTO issue more than 750 nanotechnology class 977 patents in the first six months of 2014 (1/1/14-6/30/14)? (185)
+max tied up: 295.069651908
+      belief: [0.903, 0.097]
+    cur prob: [0.980, 0.020]
+              [         ↓  ] True
+ *** optimal: [0.950, 0.050]
+
+ orig assets: [5.028, -20.918]
+    Δ assets: [-4.457, 130.822]
+final assets: [0.571, 109.904]
+      credit: 21.488
+  curr score: 1.533
+ final score: 8.713
+     est/deb: 11.215
+
+What will be the Darkcoin / Bitcoin exchange rate at the end of June 2014? (661)
+max tied up: 291.915029133
+      belief: [0.096, 0.191, 0.442, 0.215, 0.042, 0.013]
+    cur prob: [0.041, 0.163, 0.450, 0.270, 0.068, 0.008]
+              [  ↓                                     ] Below 0.005 BTC
+ *** optimal: [0.070, 0.158, 0.437, 0.262, 0.066, 0.007]
+
+ orig assets: [-18.774, 5.434, 5.434, 5.434, 5.434, 5.434]
+    Δ assets: [76.469, -4.400, -4.400, -4.400, -4.400, -4.400]
+final assets: [57.695, 1.034, 1.034, 1.034, 1.034, 1.034]
+      credit: 19.808
+  curr score: 0.564
+ final score: 3.384
+     est/deb: 6.488
+
+When will the IPv6 traffic measured by Google surpass 4%? (344)
+max tied up: 151.476256639
+      belief: [0.007, 0.000, 0.050, 0.464, 0.322, 0.156]
+    cur prob: [0.003, 0.000, 0.005, 0.540, 0.443, 0.009]
+              [                                     ↓  ] Will not occur before September 1, 2014
+ *** optimal: [0.003, 0.000, 0.005, 0.534, 0.438, 0.020]
+
+ orig assets: [19.589, 19.589, 19.589, 0.352, -0.662, 19.589]
+    Δ assets: [-1.567, -0.000, -1.567, -1.567, -1.567, 110.509]
+final assets: [18.022, 19.589, 18.022, -1.215, -2.229, 130.098]
+       debit: 1.567
+  curr score: 0.884
+ final score: 15.917
+     est/deb: 6.209
+
+Will obesity be among the top five health-related keyword searches in Google in any month in 2014? (188)
+max tied up: 40.823592385
+      belief: [0.816, 0.184]
+    cur prob: [0.860, 0.140]
+              [         ↓  ] True
+ *** optimal: [0.850, 0.150]
+
+ orig assets: [2.046, -4.891]
+    Δ assets: [-1.687, 9.954]
+final assets: [0.359, 5.063]
+      credit: 5.250
+  curr score: -0.011
+ final score: 0.450
+     est/deb: 1.223
+
+Will the Bcl3-inhibiting drug, claimed to reduce the spread of breast cancer cells, enter clinical trials before the end of July 2014? (202)
+max tied up: 209.201665278
+      belief: [0.734, 0.266]
+    cur prob: [0.890, 0.110]
+              [         ↓  ] True
+ *** optimal: [0.860, 0.140]
+
+ orig assets: [0.000, 0.000]
+    Δ assets: [-4.947, 34.792]
+final assets: [-4.947, 34.792]
+       debit: 4.947
+  curr score: 0.617
+ final score: 5.637
+     est/deb: 0.948
+
