@@ -18,7 +18,7 @@ conn = sqlite3.connect("rankings.db", detect_types=sqlite3.PARSE_DECLTYPES)
 c = conn.cursor()
 
 NOW = datetime.now()
-if NOW.hour >= 7:
+if NOW.hour >= 0:
     CURRENT_DAY = NOW.date()
 else:
     CURRENT_DAY = NOW.date() - timedelta(1)
@@ -36,7 +36,7 @@ def fetch_for_user(id):
     else:
         data = json.loads(r.read())
 
-    sleep(1)
+    sleep(2)
 
     return data
 
@@ -103,6 +103,8 @@ def by_rank(pos, previous=None):
         closest = c.fetchone()
         if closest[0] == previous:
             # we're stuck
+            return None
+        if closest[2] == None:
             return None
         distance = abs(closest[2] - pos)
         print "need %i fetches" % (distance,)
@@ -258,7 +260,10 @@ def update_for_new_day():
     dump_historical_plots()
 
 min_score_cache = { }
+SKETCHY = set([2299, 2062])
 def min_score(user_id):
+    if user_id in SKETCHY:
+        return 1.0
     if not min_score_cache.has_key(user_id):
         c.execute("select min(score) from rankings where id=? and ?<=day",
                   (user_id, CURRENT_DAY - timedelta(7)))

@@ -55,9 +55,9 @@ def cost_to_weight(cost):
     if cost < 0.0:
         return abs(cost) + 1.0
     elif cost < 1.0:
-        return 0.5
+        return 1.0
     else:
-        return 1.0 / cost
+        return 1.0
 
 def fetch_question(id):
     FILE = "q/%i" % (id,)
@@ -178,7 +178,20 @@ def nicelist(x):
 
 ITER = 0
 
-from opinions import opinions, normalize_beliefs
+def total_up_assets(question, username):
+    x = question
+    standing = { }
+    for trade in x['trades']:
+        if trade['user']['username'] != username:
+            continue
+        assets = trade['assets_per_option']
+        for asset, i in zip(assets, range(0, len(assets))):
+            standing[i] = standing.get(i, 0.0) + float(asset)
+    if len(standing)==0:
+        return [0.0] * len(x['prob'])
+    return map(lambda k: standing[k], sorted(standing.keys()))
+
+from opinions import opinions, normalize_beliefs, lockouts
 username = 'jkominek'
 def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None, standing=None,
                        prefer_silence=False):
@@ -186,16 +199,7 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
 
     x = fetch_question(id)
     if standing == None:
-        standing = { }
-        for trade in x['trades']:
-            if trade['user']['username'] != username:
-                continue
-            assets = trade['assets_per_option']
-            for asset, i in zip(assets, range(0, len(assets))):
-                standing[i] = standing.get(i, 0.0) + float(asset)
-        standing = map(lambda k: standing[k], sorted(standing.keys()))
-        if len(standing) == 0:
-            standing = [0.0] * len(x['prob'])
+        standing = total_up_assets(x, username)
     orig_tied_up = min(standing)
     if beliefs == None:
         beliefs = opinions[id][0]
@@ -210,23 +214,30 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
         prob = new_prob
         asset_change = outcomes(actual_probability, prob)
         new_standings = map(lambda old,change: old+change, standing, asset_change)
-        cost = min(map(lambda old,new: new-old, new_standings, standing))
+        earnings = min(map(lambda old,new: new-old, new_standings, standing))
 
         new_score = sum(map(lambda b,a: b*a, beliefs, new_standings))
         old_score = sum(map(lambda b,a: b*a, beliefs, standing))
 
         if back_out:
-            weight = cost_to_weight(cost)
-            maximize_this = -weight / (new_score - old_score)
+            m = min(new_standings)
+            n = new_score
+            maximize_this = (m > 0.0,
+                             n > 0.0,
+                             m*n)
+            maximize_this = (m, n)
         else:
             # first, maximize our final expected score
             # then, maximize the credit we receive
             final_improvement = (new_score - old_score)
             if final_improvement > 0.0:
-                maximize_this = (1, cost > 0.0,
-                                 new_score / cost_to_weight(cost)) #min(new_standings)))
+                maximize_this = (1,
+                                 earnings > 0.0,
+                                 new_score / cost_to_weight(min(new_standings)),
+                                 min(new_standings))
+                                 #new_score / cost_to_weight(earnings)) #min(new_standings)))
             else:
-                maximize_this = (0, False, -numpy.inf)
+                maximize_this = (0, False, -numpy.inf, -numpy.inf)
             #maximize_this = ((final_improvement + 1.0)**2.0) / cost_to_weight(cost)
 
         return maximize_this
@@ -265,7 +276,7 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
             cost = min(final_standing) - min(standing)
 
             final_expected = sum(map(lambda ep, fs: ep*fs, beliefs, final_standing))
-            if back_out and (final_expected + cost < current_expected):
+            if back_out and (final_expected < my_expected):
                 continue
 
             if not (((-tied_up_limit) < final_tied_up) or (orig_tied_up < final_tied_up)):
@@ -290,19 +301,23 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
     bel_old_score = sum(map(lambda a,p: a*p, standing, beliefs))
     bel_new_score = sum(map(lambda a,p: a*p, final_standing, beliefs))
 
-    feasible = False
+    worthwhile = False
     for old, new in zip(actual_probability, result):
         if abs(old-new)>0.0099:
-            feasible = True
+            worthwhile = True
         elif abs(old-new)>0.002 and abs(credit)>2.0:
-            feasible = True
+            worthwhile = True
 
-    if feasible and (final_tied_up < (-tied_up_limit)):
-        feasible = orig_tied_up < final_tied_up
+    if worthwhile and (final_tied_up < (-tied_up_limit)):
+        worthwhile = orig_tied_up < final_tied_up
 
-    feasible = feasible or VERBOSE
+    if worthwhile:
+        worthwhile = (bel_new_score - bel_old_score)>1.0 or \
+                     credit > 0.5
 
-    if not feasible:
+    worthwhile = worthwhile or VERBOSE
+
+    if not worthwhile:
         return None
 
     suggesting_a_change = abs(actual_probability[best_choice] - result[best_choice]) > 0.001
@@ -329,14 +344,16 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
     s +=      "     est/deb: %.3f\n" % (estdeb,)
 
     my_final_score = bel_new_score - bel_old_score
+    steps = 1
 
     if back_out:
-        res = optimal_adjustment(id, beliefs=beliefs, back_out=False, actual_probability=result, standing=final_standing)
-        if res:
-            s += res[4]
-            my_final_score += res[0]
-            credit += res[1]
-            final_standing = res[2]
+        pass
+        #res = optimal_adjustment(id, beliefs=beliefs, back_out=True, actual_probability=result, standing=final_standing)
+        #if res:
+        #    s += res[4]
+        #    my_final_score += res[0]
+        #    credit += res[1]
+        #    final_standing = res[2]
     elif suggesting_a_change and len(beliefs)>2:
         res = optimal_adjustment(id, beliefs=beliefs, back_out=False, actual_probability=result, standing=final_standing,
                                prefer_silence=True)
@@ -345,11 +362,12 @@ def optimal_adjustment(id, beliefs=None, back_out=False, actual_probability=None
             my_final_score += res[0]
             credit += res[1]
             final_standing = res[2]
+            steps += res[5]
 
     estdeb = sum(map(lambda a,p: a*p, final_standing, beliefs)) / cost_to_weight(min(final_standing))
 
-    if (not prefer_silence) or suggesting_a_change:
-        return (my_final_score, credit, final_standing, estdeb, s)
+    if (not prefer_silence) or suggesting_a_change or VERBOSE:
+        return (my_final_score, credit, final_standing, estdeb, s, steps)
     else:
         return None
 
@@ -381,8 +399,8 @@ def find_optimal_trading_opportunities(candidates=None, back_out=False):
 
     output.sort(key=lambda x: x[3], reverse=True)
 
-    for score, credit, final_standing, estdeb, v in output:
-        if estdeb > 0.75:
+    for score, credit, final_standing, estdeb, v, steps in output:
+        if estdeb > 0.666 or VERBOSE:
             print v
 
     FETCH_DELAY = old_delay
@@ -442,6 +460,9 @@ def determine_belief_from_data(id):
 
         final_belief = map(lambda fp, np: fp + np*user_score, final_belief, beliefs_by_user[user_id])
 
+    if lockouts.has_key(id):
+        final_belief = map(lambda l,b: l*b, lockouts[id], final_belief)
+
     final_belief = normalize_beliefs(final_belief)
     return final_belief
 
@@ -455,7 +476,7 @@ def determine_trade_from_data(id):
 
     return optimal_adjustment(id, predicted_belief)
 
-DO_NOT_TRUST_CONSENSUS = set([74, 112, 537, 164, 110, 287, 538])
+DO_NOT_TRUST_CONSENSUS = set([74, 112, 537, 164, 110, 287, 538, 202, 121, 111])
 def find_data_based_trading_opportunities(candidates=[ ]):
     if len(candidates)==0:
         for q_id in summarizequestions.by_id.keys():
@@ -487,8 +508,8 @@ def find_data_based_trading_opportunities(candidates=[ ]):
 
     output.sort(key=lambda x: x[3], reverse=True)
 
-    for score, credit, final_standing, estdeb, v in output:
-        if estdeb > 0.75:
+    for score, credit, final_standing, estdeb, v, steps in output:
+        if estdeb > 0.666 or VERBOSE:
             print v
 
 if __name__ == '__main__':
