@@ -1,13 +1,14 @@
 from datetime import *
 
 opinions = { }
+lockouts = { }
 boring = set([455, 351, 454, 447, 393, 394,  29,
               216, 588, 658, 212, 481, 495, 518,
               490, 524, 526, 527, 502, 480, 528,
               590, 520, 703, 708, 477, 479, 513,
               500, 492, 487, 199, 538, 537, 504,
               497, 486, 471, 501, 519, 522, 503,
-              650, 651, 652])
+              650, 651, 652, 458, 470, 474])
 
 weak = 0.5
 strong = 2.0
@@ -25,6 +26,9 @@ def normalize_beliefs(beliefs):
 def o(key, beliefs, strength=1.0):
     opinions[key] = (normalize_beliefs(beliefs), strength)
 
+def l(key, beliefs):
+    lockouts[key] = beliefs
+
 def goes_to(f, initial=None, start=None, stop=None, flat_before=True):
     if flat_before and date.today() < start:
         return f(initial)
@@ -38,6 +42,9 @@ def yes(percent):
 def no(percent):
     return [percent, 100-percent]
 
+# When will the IPv6 traffic measured by Google surpass 4%?
+o(344, [0, 0, 0, 0.997, 0.003, 0])
+
 # what happened to mh370
 o(365,  [ 0,    0,    0,    0,    0,    100], strong*5)
 
@@ -45,7 +52,7 @@ o(365,  [ 0,    0,    0,    0,    0,    100], strong*5)
 o(395, yes(70), weak)
 
 # Will scientists create a fully air-transmissible, mammalian-infectious strain of avian influenza in a laboratory setting by the end of 2014?
-o(656, [1, 5], 0.08)
+o(656, [1, 2], 0.08)
 
 # Will Jupiter's Great Red Spot shrink below 9,000 miles in diameter before January 1, 2016?
 o(684, goes_to(no, 80, date(2014,5,1), date(2015,12,1)),
@@ -95,7 +102,7 @@ o(672, yes(66.666), weak)
 o(462, yes(20), 0.1)
 
 # Will Google make end-to-end PGP encryption a core feature in Gmail by August 2014?
-o(585, no(98), strong*2)
+o(585, no(98), strong)
 
 # When will the Deque Conjecture be proven?
 o(26, [1, 10, 10, 10, 20], weak)
@@ -119,7 +126,7 @@ o(659, yes(33.333), weak)
 o(643, yes(76))
 
 # Will the International Sun-Earth Explorer 3 start to collect data and send it to Earth?
-o(644, yes(65), weak)
+o(644, yes(64), weak)
 
 # Will NASA land a telepresence robot on Venus by 2020?
 o(653, no(98), strong*2)
@@ -206,7 +213,7 @@ o(27, [1, 2, 3, 4, 50], varying_strength(date(2045,1,1), date(2050,1,1), weak, s
 o(99, [0.5, 10, 1, 0.1], weak*0.25)
 
 # Will the NASA's Mars Atmosphere and Volatile Evolution (MAVEN) spacescraft launched on November 17, 2013 enter the Mars orbit by the end of September 2014?
-o(143, yes(95), weak)
+o(143, yes(90), weak)
 
 # Will the silver nanowire ink touch sensitive screens being developed by 3M and Cambrios be in commercially available smartphones by the end of 2015?
 o(363, yes(33), weak)
@@ -260,7 +267,7 @@ o(39, [2, 2, 1, 1, 100], strong)
 o(45, [1, 2, 20, 2, 1], strong*0.55)
 
 # On November 2014, what will be the geographic region of the Top 500 winner? 
-o(44, [2, 10, 1, 1, 1], strong*0.55)
+o(44, [2, 10, 1, 1, 0.333], strong*0.55)
 
 # On November 2014, what will be the vendor of the Top 500 winner? 
 o(43, [2, 3, 1, 1, 20*.8], strong*0.55)
@@ -364,7 +371,7 @@ o(12, yes(10), weak)
 o(73, [10, 100, 10, 1, 0], 2*strong)
 
 # On NOV 2014, what will be the (performance-weighted) gigaflops per core of the Top 500? (177)
-o(177, [5, 80, 20, 1, 0], strong)
+o(177, [1, 60, 40, 1, 0], strong)
 
 # In the 2013 Annual Report from the National Poison Data System (NPDS), will analgesics be the number one substance class for exposures among adults in the US?
 o(226, yes(63.1), weak)
@@ -379,7 +386,7 @@ o(698, yes(55), 0.05)
 o(373, yes(12), weak)
 
 # How many near-Earth large asteroids will NASA detect in 2014?
-o(321, [0.096, 0.857, 0.026, 0, 0])
+o(321, [0.096, 0.857, 0.026, 0, 0], weak)
 
 # How many IBM-manufactured supercomputers will make the top 10 of the June 2014 TOP500 world's fastest supercomputer rankings?
 o(11, [0, 4, 5, 0], weak)
@@ -431,3 +438,15 @@ o(188, yes(3), weak)
 
 # When will a classical algorithm be authored to solve 3-SAT faster than exp(o(n))?
 o(32, [0, 1, 2, 3, 6], weak)
+
+# Internet of things 20 billion connected devices at end of 2013. how many at end of 2014?
+o(566, [1, 10, 11, 10, 8], weak)
+
+# world produced 4.4 zettabytes in 2013. how much in 2014?
+o(620, [1, 2, 10, 10, 3], weak)
+
+# Will the Mars Curiosity Rover discover organic matter on Mars by September 1, 2014?
+o(127, no(100))
+
+# which smallsat company will be the first to provide daily re-imaging of the earth?
+o(714, [40, 100, 10, 75, 60, 50])
