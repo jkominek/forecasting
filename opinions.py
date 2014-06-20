@@ -453,3 +453,6 @@ o(714, [40, 100, 10, 75, 60, 50])
 
 # When the consumer version of Google Glass is released to the general public, what will its price be? 
 o(399, [1, 8, 4])
+
+# ; (720) Doctors saved the life of a boy suffering from encephalitis when a sequencing test turned up DNA of a lethal bacteria in his cerebrospinal fluid. What type of pathogen will this test discover next in a critically-ill patient suffering from encephalitis? 
+o( 720, [5, 6, 2, 3, 1, 4], strong)
