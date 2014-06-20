@@ -23,6 +23,10 @@
 	score
 	(error "user-minimum-score isn't yet smart enough to fetch new data"))))
 
+;(define/contract
+;  (todays-top-n n)
+;  (-> natural-numer/c (non-empty-listof (non-empty-listof any/c)))
+
 (provide user-minimum-score)
 
 (define

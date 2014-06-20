@@ -3,7 +3,8 @@
 (require math
 	 racket/cmdline
 	 racket/function
-	 racket/promise
+	 racket/match
+	 racket/async-channel
          (planet bzlib/date/plt)
          (file "/home/jkominek/forecasting/questions.rkt")
          (file "/home/jkominek/forecasting/rankings.rkt")
@@ -40,6 +41,9 @@
                            (flip-optimization #t)]
 
   #:once-any
+  [("--python") "Use a duplicate(?) of the final Python rule"
+                (strategy python-utility)
+		(strategy> comparison-function)]
   [("--curr-score") "Maximize current score"
                     (strategy (simple-adjustable 'curr-score))
                     (strategy> >)]
@@ -67,7 +71,7 @@
   [("--ramifications") choice probability
                        "Displays the ramifications of shifting choice to probability"
 		       (ramifications (cons (string->number choice)
-					    (/ (string->number probability) 100)))]
+					    (exact->inexact (/ (string->number probability) 100))))]
   
   #:args raw-question-ids
   (question-ids (map string->number raw-question-ids))
@@ -86,29 +90,34 @@
   (define considered 0)
   (define displayed 0)
 
-  (define trade-sequences
-    (for/list ([q-id question-ids])
-      (delay/idle
-	(define q (fetch-full-question q-id))
+  (current-thread-group (make-thread-group))
+  (define finished (make-async-channel))
 
-	(define trade-sequence
-	  (find-optimal-trade-sequence
-	   (strategy) (strategy>)
-	   #:assets (question-user-assets q (my-user-name))
-	   #:debt-limit (if (number? (forced-debt-limit))
-			    (forced-debt-limit)
-			    (maximum-points-tied-up (question-settlement-at q)))
-	   #:beliefs (opinion-beliefs (get-opinion (question-id q)))
-	   #:initial-probabilities (question-probability q)
-	   #:trade-limit 5
-	   ))
+  (for ([q-id question-ids])
+    (thread
+     (lambda ()
+       (define q (fetch-full-question q-id))
 
-	(values q-id q trade-sequence))))
+       (define trade-sequence
+	 (find-optimal-trade-sequence
+	  (strategy) (strategy>)
+	  #:assets (question-user-assets q (my-user-name))
+	  #:debt-limit (if (number? (forced-debt-limit))
+			   (forced-debt-limit)
+			   (maximum-points-tied-up (question-settlement-at q)))
+	  #:minimum-change 1/4
+	  #:beliefs (opinion-beliefs (get-opinion (question-id q)))
+	  #:initial-probabilities (question-probability q)
+	  #:trade-limit 5
+	  ))
 
-  (for ([promise (in-list trade-sequences)])
-    (define-values
-      (q-id q trade-sequence)
-      (force promise))
+       ; if the thread doesn't put something, we'll have a problem later
+       (async-channel-put finished (list q-id q trade-sequence)))))
+
+  (for ([ignore question-ids])
+    (match-define
+     (list q-id q trade-sequence)
+     (async-channel-get finished))
 
     (set! considered (add1 considered))    
     (when (and (equal? trade-sequence '())
@@ -134,9 +143,10 @@
     (define new-prob (shift-choice-probability (question-probability q)
 					       choice
 					       probability))
-    (printf "(~a) ~a~n~a~n"
+    (printf "(~a) ~a~n~ https://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
 	    (question-id q)
 	    (question-name q)
+	    (question-id q)
 	    (summarize-effect-of-trades
 	     q (list new-prob)
 	     #:user-name (my-user-name)

@@ -49,6 +49,7 @@
             (shift-choice-probability initial-probabilities choice
                                       (exact->inexact new-probability))]
            [v (f shifted-probabilities)])
+      ;(printf "~a ~a~n" shifted-probabilities v)
       ; we'll let f return void so it can say "screw those options, i don't even want to vote"
       (if (and (not (void? v))
                (> v maximized-value))
@@ -89,10 +90,11 @@
               (and (> expected-earnings-improvement 0)
 		   ; you can exceed the debt limit by x if you're
 		   ; going to get e^x improvement in expected earnings
-                   (>= new-debt (- debt-limit
-				   (if (> expected-earnings-improvement 1.0)
-				       (log expected-earnings-improvement)
-				       0.0)))))
+		   (or (> new-debt initial-debt)
+		       (>= new-debt (- debt-limit
+				       (if (> expected-earnings-improvement 1.0)
+					   (log expected-earnings-improvement)
+					   0.0))))))
           ; if so
 	  (if (>= new-debt (/ debt-limit 10))
 	      ; anything under 10% of our debt limit
@@ -107,6 +109,54 @@
 		    (/ new-expected-earnings
 		       (abs new-debt))))
           
+          ; this is the "we're making things worse" case. fuck it
+          (void)))))
+
+(define (python-utility
+         #:beliefs beliefs
+         #:assets initial-assets
+         #:initial-probabilities initial-probabilities
+         #:debt-limit [debt-limit 0])
+  ; this is how much the market is currently holding onto
+  ; until question resolution, initially
+  (define initial-debt (apply min initial-assets))
+  ; this is how much we expect to earn (probabilistically)
+  ; upon question resolution, initially
+  (define initial-expected-earnings (apply + (map * beliefs initial-assets))) 
+
+  (lambda (new-probabilities #:initial [initial #f])
+    (let* ([asset-change (lmsr-outcomes initial-probabilities new-probabilities)]
+           [new-assets (map + initial-assets asset-change)]
+           ; this is the amount the market will hold onto until
+           ; resolution if we make this trade
+           [new-debt (apply min new-assets)]
+           ; this is how much we expect to earn (probabilistically)
+           ; upon question resolution, if we make this trade
+           [new-expected-earnings
+            (apply + (map * beliefs new-assets))]
+           ; change in expected earnings
+           [expected-earnings-improvement
+            (- new-expected-earnings initial-expected-earnings)])
+      
+      ; check that we're actually improving things in the end
+      (if (or initial
+              (and (> expected-earnings-improvement 0)
+		   ; you can exceed the debt limit by x if you're
+		   ; going to get e^x improvement in expected earnings
+		   ; this part wasn't in the python version, but seems
+		   ; safe enough
+                   (>= new-debt (- debt-limit
+				   (if (> expected-earnings-improvement 1.0)
+				       (log expected-earnings-improvement)
+				       0.0)))))
+	  (list (if (for/fold ([some-improvement #f])
+			      ([new new-assets]
+			       [old initial-assets])
+			      (or some-improvement (> new old)))
+		    1
+		    0)
+		(/ new-expected-earnings (cost->weight (apply min new-assets)))
+		(apply min new-assets))
           ; this is the "we're making things worse" case. fuck it
           (void)))))
 
@@ -137,11 +187,12 @@
              [new-expected-earnings
               (apply + (map * beliefs new-assets))]
              ; change in expected earnings
-             [expected-earnings-improvement
+	     [expected-earnings-improvement
               (- new-expected-earnings initial-expected-earnings)])
         
-        (if (and (< new-debt debt-limit) (not initial))
-            (void)
+        (if (or (> new-debt debt-limit)
+		(> new-debt initial-debt)
+		initial)
             (cond
               [(equal? attribute 'curr-score)
                (- (apply + (map * new-assets new-probabilities))
@@ -166,13 +217,18 @@
               [(equal? attribute 'total-assets)
                (apply + new-assets)]
               [else (error "unknown attribute" attribute)])
+            (void)
             )))))
 
 (define (comparison-function as bs)
-  (for/fold ([o #t])
-    ([a as]
-     [b bs])
-    (and o (> a b))))
+  (let/ec done
+    (for ([a as]
+	  [b bs])
+      (cond
+       [(> a b) (done #t)]
+       [(< (abs (- a b)) 1e-10) (void)]
+       [(< a b) (done #f)]))
+    #f))
 
 (define (find-optimal-trade
          utility-function
@@ -198,6 +254,7 @@
          #:assets initial-assets
          #:debt-limit debt-limit
          #:beliefs beliefs
+	 #:minimum-change [minimum-change 1/3]
          #:initial-probabilities initial-probabilities
          #:trade-limit [trade-limit 10])
   (let/ec done
@@ -207,12 +264,13 @@
                                            #:assets initial-assets #:beliefs beliefs
                                            #:initial-probabilities initial-probabilities
                                            #:debt-limit debt-limit))
+    ;(printf "~a~n" next-trade)
     (define max-difference
       (for/fold ([diff 0])
 		([p initial-probabilities]
 		 [n next-trade])
 		(max diff (abs (- p n)))))
-    (when (< max-difference 1/3)
+    (when (< max-difference (/ minimum-change 100))
       (done '()))
     (define new-assets (map + initial-assets (lmsr-outcomes initial-probabilities next-trade)))
     (cons next-trade
@@ -230,8 +288,15 @@
 (define (pretty-string-list l)
   (format "[~a ]" (string-join l)))
 
-(define roundy-probabilities
-  (map exact->inexact (sequence->list (in-range 1/100 1 1/100))))
+(define (determine-choice ps)
+  ; better hope that one of the choices matches
+  ; or this will explode. hooray
+  (let ([p (car ps)])
+    (if (< (abs (- (/ (exact-round (* p 100)) 100) p)) 1e-14)
+	0
+	(if (null? (cdr ps))
+	    (error "couldn't find the choice")
+	    (add1 (determine-choice (cdr ps)))))))
 
 (define/contract
   (summarize-effect-of-trades
@@ -287,12 +352,18 @@
        [old-assets (cons initial-assets assets-per-trade)]
        [new-assets assets-per-trade]
        [id (in-range 1 50)])
+      (define choice (determine-choice to))
       (string-join
        (list s
              (cat "" 15)
-             (pretty-string-list (for/list ([p to])
-                                   (if (member p roundy-probabilities)
+             (pretty-string-list (for/list ([i (in-range 0 (length to))])
+                                   (if (= i choice)
                                        "  ↓  " "     ")))
+	     "  "
+	     (cat (if (>= choice 0)
+		      (choice-name (question-choice question choice))
+		      "???") -16)
+	     
              "\n"
              (cat id 14) " "
              (pretty-probability-list to)
@@ -311,6 +382,7 @@
     "\n"
     (cat "Δ assets:" 15)
     (pretty-asset-list (map - (last assets-per-trade) initial-assets))
+    (cat (exact-round (apply + (map - (last assets-per-trade) initial-assets))) 6)
     "\n"
     (cat "final assets:" 15)
     (pretty-asset-list (last assets-per-trade))
@@ -336,6 +408,7 @@
     ) ""))
 
 (provide utility-function
+	 python-utility
          simple-adjustable
          comparison-function
  
