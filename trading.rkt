@@ -302,11 +302,13 @@
   (summarize-effect-of-trades
    question new-probabilities-list
    #:beliefs [beliefs #f]
+   #:summary-hash [sh (make-hash)]
    #:user-name my-user-name)
   (->* ((hash/c symbol? any/c)
 	(non-empty-listof (non-empty-listof (real-in 0.0 1.0)))
 	#:user-name string?)
-       (#:beliefs (or/c #f (non-empty-listof (real-in 0.0 1.0))))
+       (#:beliefs (or/c #f (non-empty-listof (real-in 0.0 1.0)))
+	#:summary-hash (hash/c symbol? number?))
        string?)
 
   (define initial-probabilities (question-probability question))
@@ -324,9 +326,18 @@
                 new))))
   (define assets-per-trade (reverse reversed-assets-per-trade))
   (define credit (- (apply min (last assets-per-trade)) (apply min initial-assets)))
-  
+
+  ;(hash-set! sh 'initial-probabilities initial-probabilities)
+  ;(hash-set! sh 'initial-assets initial-assets)
+  (hash-set! sh 'credit credit)
+  (hash-set! sh 'total-Δassets  (apply + (map - (last assets-per-trade) initial-assets)))
+
   (define initial-current-score (apply + (map * initial-assets initial-probabilities)))
   (define new-current-score (apply + (map * (last assets-per-trade) (last new-probabilities-list))))
+
+  (hash-set! sh 'initial-current-score initial-current-score)
+  (hash-set! sh 'new-current-score new-current-score)
+  (hash-set! sh 'current-score-improvement (- new-current-score initial-current-score))
   
   (string-join
    (list
@@ -397,6 +408,10 @@
     (if beliefs
         (let* ([initial-final-score (apply + (map * initial-assets beliefs))]
                [new-final-score (apply + (map * (last assets-per-trade) beliefs))])
+	  (hash-set! sh 'initial-final-score initial-final-score)
+	  (hash-set! sh 'new-final-score new-final-score)
+	  (hash-set! sh 'final-score-improvement (- new-final-score initial-final-score))
+
           (string-join
            (list (cat "final score:" 15)
                  (cat (- new-final-score initial-final-score) 8 -2.)

@@ -125,15 +125,26 @@
       (printf "nothing to do on ~a~n" q-id))
 
     (when (> (length trade-sequence) 0)
-      (set! displayed (add1 displayed))
-      (printf "(~a) ~a~n~a~n"
-	      (question-id q)
-	      (question-name q)
-	      (summarize-effect-of-trades
-	       q trade-sequence
-	       #:user-name (my-user-name)
-	       #:beliefs (opinion-beliefs (get-opinion (question-id q))))))
-    )
+      (define summary-details (make-hash))
+      (define summary
+	(summarize-effect-of-trades
+	 q trade-sequence
+	 #:user-name (my-user-name)
+	 #:summary-hash summary-details
+	 #:beliefs (opinion-beliefs (get-opinion (question-id q)))))
+      (when (or (> (hash-ref summary-details 'credit) 0.5)
+		(> (hash-ref summary-details 'current-score-improvement) 5.0)
+		(> (hash-ref summary-details 'total-Δassets) 25)
+		(and (hash-has-key? summary-details 'final-score-improvement)
+		     (> (hash-ref summary-details 'final-score-improvement) 1.0)))
+	(set! displayed (add1 displayed))
+	(printf "(~a) ~a~n~ https://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
+		(question-id q)
+		(question-name q)
+		(question-id q)
+		summary)))
+    ) ; for
+
   (when (= 0 displayed)
     (printf "~a questions considered~n" considered)))
 
