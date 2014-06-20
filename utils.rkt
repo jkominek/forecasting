@@ -2,7 +2,13 @@
 
 (require math
 	 (planet bzlib/date/plt)
-	 racket/contract)
+	 racket/contract
+	 (only-in srfi/54 cat)
+	 net/url
+	 racket/port
+	 file/gunzip)
+
+(provide cat)
 
 ; Takes a list of relative likelihoods, and normalizes
 ; them all into probabilities.
@@ -63,25 +69,59 @@
       (real-in 0 1)
       (listof (real-in 0.0 1.0)))
 
-  ; is this right? algebra is hard right now
   (define leftover (- (list-ref probabilities choice) new-value))
-  (define inverse-sum-of-unspecified-probabilies
-    (/ (for/fold ([sum 0.0])
-         ([p probabilities]
-          [i (in-naturals)])
-         (if (= i choice)
-             sum
-             (+ sum p)))))
+  (define sum-of-unspecified-probabilies
+    (for/fold ([sum 0.0])
+	      ([p probabilities]
+	       [i (in-naturals)])
+	      (if (= i choice)
+		  sum
+		  (+ sum p))))
+  (define l/s (/ leftover sum-of-unspecified-probabilies))
+
   (for/list ([p probabilities]
              [i (in-naturals)])
     (if (= i choice)
         new-value
-        (if (> inverse-sum-of-unspecified-probabilies 0.0)
-            (+ p (* p leftover inverse-sum-of-unspecified-probabilies))
+        (if (> sum-of-unspecified-probabilies 0.0)
+            (+ p (* l/s p))
             0.0))))
+
+(define rate-limiter (make-channel))
+(void (thread
+ (lambda ()
+   (for ([i (in-naturals)])
+     (channel-put rate-limiter i)
+     (sleep 5)))))
+
+(define (get-gzip-pure-port url-string)
+  ; prevents us from hitting the web site very hard
+  (channel-get rate-limiter)
+  (printf "fetching from network!~n")
+
+  (define p (get-pure-port (string->url url-string)
+			   '("Accept-encoding: gzip")))
+  (define-values (in out) (make-pipe))
+  (thread (lambda ()
+	    (gunzip-through-ports p out)
+	    (flush-output out)
+	    (close-output-port out)))
+  in)
+
+(define (open-url/cache-to-file url path #:max-age [max-age 3600])
+  (let ([last-modification
+	 (file-or-directory-modify-seconds path #f (lambda () 0))])
+    (when (> (- (current-seconds) last-modification) max-age)
+      (let ([dest-port (open-output-file path #:exists 'replace)])
+	(copy-port (get-gzip-pure-port url) dest-port)
+	(flush-output dest-port)
+	(close-output-port dest-port)))
+    (open-input-file path)))
   
 (provide normalize-probabilities
 	 maximum-points-tied-up
          lmsr-outcome
          lmsr-outcomes
-         shift-choice-probability)
+         shift-choice-probability
+	 open-url/cache-to-file
+	 )

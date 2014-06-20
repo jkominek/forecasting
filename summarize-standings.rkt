@@ -5,9 +5,9 @@
          (file "/home/jkominek/forecasting/opinions.rkt")
          (file "/home/jkominek/forecasting/utils.rkt")
          (planet bzlib/date/plt)
-         srfi/54)
+	 )
 
-(question-database (load-question-database "tiny.json"))
+(question-database (load-question-database-url/cache-to-file *standard-question-list-url* "data.json"))
 
 (define q-id
   (command-line

@@ -4,19 +4,26 @@
 	 json
 	 racket/set
 	 racket/contract
+	 (file "/home/jkominek/forecasting/utils.rkt")
 	 )
 
 (define question-database/c (hash/c natural-number/c jsexpr?))
 (define question/c jsexpr?)
 
 (define/contract
-  (load-question-database path)
-  (-> path-string? question-database/c)
+  (load-question-database port)
+  (-> input-port? question-database/c)
 
-  (let ([raw-json (read-json (open-input-file path))])
+  (let ([raw-json (read-json port)])
     (for/hash ([q-rec (in-list raw-json)])
       (values (hash-ref (hash-ref q-rec 'question) 'id)
 	      q-rec))))
+
+(define/contract
+  (load-question-database-url/cache-to-file url path)
+  (-> string? path-string? question-database/c)
+  (load-question-database
+    (open-url/cache-to-file url path)))
 
 (define/contract
   question-database
@@ -24,13 +31,22 @@
 
   (make-parameter #f))
 
-(provide question-database load-question-database)
+(define *standard-question-list-url* "https://scicast.org/questions/?include_prob=True&include_comment_count=True&include_trade_count=True&include_user_roles=False&include_question_clique=False&include_question_relationship=False")
+
+(provide question-database load-question-database
+	 load-question-database-url/cache-to-file *standard-question-list-url*
+	 )
 
 (define/contract
   (fetch-question id #:question-database [q-d (question-database)])
   (->* (natural-number/c) (#:question-database question-database/c) question/c)
 
   (hash-ref q-d id))
+
+(define (question-url q-id)
+  (format
+   "https://scicast.org/questions/show?question_id=~a&include_prob=True&include_cash=True&include_trades=True&include_comments=False&include_trade_ranges=True&include_recommendations=False"
+   q-id))
 
 (define/contract
   (fetch-full-question q-or-qid #:question-database [q-d (question-database)])
@@ -41,11 +57,22 @@
   (let* ([qid (if (number? q-or-qid)
 		  q-or-qid
 		  (question-id q-or-qid))]
-	 [full
-	  (read-json
-	   (open-input-file
-	    (build-path "q" (number->string qid))))])
-    (for/fold ([start (fetch-question qid)])
+	 [question (fetch-question qid)]
+	 [qpath (build-path "q" (number->string qid))]
+	 [current-date
+	  (if (file-exists? qpath)
+	      (question-updated-at
+	       (read-json
+		(open-input-file qpath)))
+	      (read-iso8601 "1980-01-01"))])
+    (define full
+      (if (date<? current-date
+		  (question-updated-at question))
+	  ; oh noes full question is out of date
+	  (read-json (open-url/cache-to-file (question-url qid) qpath #:max-age 45))
+	  ; up to date, use what we've got
+	  (read-json (open-input-file qpath))))
+    (for/fold ([start question])
 	      ([(k v) (in-hash full)])
       (hash-set start k v))))
 
