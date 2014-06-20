@@ -214,7 +214,7 @@ def random_expansion():
         else:
             candidates.add(rank_to_id[rank])
     print "found %i random expansion candidates" % (len(candidates),)
-    for id in random.sample(candidates, min(10, len(candidates))):
+    for id in random.sample(candidates, min(5, len(candidates))):
         fetch_and_update(id)
 
 def fetch_smattering():
@@ -245,17 +245,17 @@ def fetch_smattering():
     print "found %i for 5ks" % (len(fiveks),)
     print "found %i for low end" % (len(low_end),)
 
-    for id in random.sample(high_end, min(len(high_end), 10)):
+    for id in random.sample(high_end, min(len(high_end), 5)):
         by_id(id)
-    for id in random.sample(fiveks, min(len(fiveks), 5)):
+    for id in random.sample(fiveks, min(len(fiveks), 3)):
         by_id(id)
-    for id in random.sample(low_end, min(len(low_end), 10)):
+    for id in random.sample(low_end, min(len(low_end), 5)):
         by_id(id)
 
 def update_for_new_day():
+    fetch_smattering()
     fetch_active_users()
     fillout_top(20)
-    fetch_smattering()
     random_expansion()
     dump_historical_plots()
 
