@@ -326,7 +326,7 @@
 (o 40 '[2 100 1 1 1] strong)
 
 ; On June 2014 what will be the vendor of the Top 500 winner? 
-(o 39 '[2 2 1 1 100] strong)
+(o 39 '[2 2 1 1 200] strong)
 
 
 ; On November 2014 what will be the cores per socket of the Top 500 winner? 
@@ -522,5 +522,8 @@
 ; When the consumer version of Google Glass is released to the general public, what will its price be? 
 (o 399 '[1 8 4])
 
-; (720) Doctors saved the life of a boy suffering from encephalitis when a sequencing test turned up DNA of a lethal bacteria in his cerebrospinal fluid. What type of pathogen will this test discover next in a critically-ill patient suffering from encephalitis? 
-(o 720 '[5 6 2 3 1 4] weak)
+; Doctors saved the life of a boy suffering from encephalitis when a sequencing test turned up DNA of a lethal bacteria in his cerebrospinal fluid. What type of pathogen will this test discover next in a critically-ill patient suffering from encephalitis? 
+(o 720 '[4 6 2 3 1 12] weak)
+
+; Will a Tesla electric car with a base price under $35,000 be for sale in the U.S. before the end of 2016? 
+(o 717 (yes 45))
