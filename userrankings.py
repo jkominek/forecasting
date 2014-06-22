@@ -196,7 +196,10 @@ def find_active_users():
     return recent_users.keys()
 
 def fetch_active_users():
-    for user_id in sorted(find_active_users(), key=min_score):
+    users = find_active_users()
+    users = filter(lambda u: min_score(u) >= 5000.0, users)
+    users = random.sample(users, min(15, len(users)))
+    for user_id in sorted(users, key=min_score):
         by_id(user_id)
 
 def random_expansion():
@@ -269,7 +272,8 @@ def min_score(user_id):
                   (user_id, CURRENT_DAY - timedelta(7)))
         score = c.fetchone()[0]
         if score == None:
-            by_id(user_id)
+            #by_id(user_id)
+            return 250.0
         c.execute("select min(score) from rankings where id=? and ?<=day",
                   (user_id, CURRENT_DAY - timedelta(7)))
         min_score_cache[user_id] = max(1.0, c.fetchone()[0])
