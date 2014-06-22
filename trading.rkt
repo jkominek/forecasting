@@ -302,6 +302,7 @@
   (summarize-effect-of-trades
    question new-probabilities-list
    #:beliefs [beliefs #f]
+   #:initial-assets [initial-assets #f]
    #:debt-limit [debt-limit (maximum-points-tied-up (question-settlement-at question))]
    #:summary-hash [sh (make-hash)]
    #:user-name my-user-name)
@@ -309,12 +310,14 @@
 	(non-empty-listof (non-empty-listof (real-in 0.0 1.0)))
 	#:user-name string?)
        (#:debt-limit real?
+	#:initial-assets (or/c #f (non-empty-listof real?))
 	#:beliefs (or/c #f (non-empty-listof (real-in 0.0 1.0)))
 	#:summary-hash (hash/c symbol? number?))
        string?)
 
   (define initial-probabilities (question-probability question))
-  (define initial-assets (question-user-assets question my-user-name))
+  (unless initial-assets
+    (set! initial-assets (question-user-assets question my-user-name)))
   (define Δassets
     (for/list ([from (cons initial-probabilities new-probabilities-list)]
                [to new-probabilities-list])

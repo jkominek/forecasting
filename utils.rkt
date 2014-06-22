@@ -97,7 +97,7 @@
 (define (get-gzip-pure-port url-string)
   ; prevents us from hitting the web site very hard
   (channel-get rate-limiter)
-  ;(printf "fetching from network!~n")
+  (printf "fetching from network!~n")
 
   (define p (get-pure-port (string->url url-string)
 			   '("Accept-encoding: gzip")))
@@ -108,7 +108,7 @@
 	    (close-output-port out)))
   in)
 
-(define (open-url/cache-to-file url path #:max-age [max-age 3600])
+(define (open-url/cache-to-file url path #:max-age [max-age 1200])
   (let ([last-modification
 	 (file-or-directory-modify-seconds path #f (lambda () 0))])
     (when (> (- (current-seconds) last-modification) max-age)

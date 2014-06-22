@@ -17,6 +17,7 @@
 
 (define question-ids (make-parameter #f))
 (define my-user-name (make-parameter "jkominek"))
+(define my-user-id (make-parameter 296))
 (define forced-debt-limit (make-parameter #f))
 (define flip-optimization (make-parameter #f))
 
@@ -35,9 +36,9 @@
  (command-line
   #:program "find-trades"
   #:once-each
-  [("-u" "--user") user
-   "Username to trade for"
-   (my-user-name user)]
+;  [("-u" "--user") user
+;   "User ID to trade for"
+;   (my-user-id (string->number user))]
   [("--debt-limit") debt-limit
    "Override debt limit; sign is flipped"
    (forced-debt-limit (- (string->number debt-limit)))]
@@ -109,7 +110,24 @@
 (when (flip-optimization)
   (strategy> (negate (strategy>))))
 
+(define standings (make-hash))
+
+(for ([trade (fetch-user-trades (my-user-id))]
+      #:when (have-question? (hash-ref trade 'question_id)))
+  (define q-id (hash-ref trade 'question_id))
+  (define q (fetch-question q-id))
+
+  (define standing
+    (map + (hash-ref standings q-id
+		     (lambda ()
+		       (build-list (length (trade-assets trade)) (lambda x 0.0))))
+	 (trade-assets trade)))
+  (hash-set! standings q-id standing))
+
 (define logged-in #f)
+
+(define (empty-assets q)
+  (build-list (length (question-probability q)) (lambda x 0.0)))
 
 (define (perform-opinionated-search question-ids)
   (define considered 0)
@@ -121,13 +139,13 @@
   (for ([q-id question-ids])
     (thread
      (lambda ()
-       (define q (fetch-full-question q-id))
+       (define q (fetch-question q-id))
        (define opinion (get-opinion (question-id q)))
 
        (define trade-sequence
 	 (find-optimal-trade-sequence
 	  (strategy) (strategy>)
-	  #:assets (question-user-assets q (my-user-name))
+	  #:assets (hash-ref standings q-id (empty-assets q))
 	  #:debt-limit (if (number? (forced-debt-limit))
 			   (forced-debt-limit)
 			   (* (opinion-strength opinion)
@@ -156,6 +174,7 @@
       (define summary
 	(summarize-effect-of-trades
 	 q trade-sequence
+	 #:initial-assets (hash-ref standings q-id (empty-assets q))
 	 #:user-name (my-user-name)
 	 #:summary-hash summary-details
 	 #:debt-limit (* (opinion-strength opinion)

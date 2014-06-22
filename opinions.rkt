@@ -150,7 +150,7 @@
    (varying-strength "2014-09-01" "2015-09-06"))
 
 ; Will Google announce development of a smartwatch at or before the Google I/O 2014 Conference?
-(o 672 (yes 66.666) weak)
+(o 672 (yes 82) weak)
 
 ; Will there be at least one female winner of a Fields Medal in 2014?
 (o 462 (yes 20) 0.1)
@@ -275,7 +275,7 @@
 (o 99 '[0.5 10 1 0.1] (/ weak 5))
 
 ; Will the NASA's Mars Atmosphere and Volatile Evolution (MAVEN) spacescraft launched on November 17 2013 enter the Mars orbit by the end of September 2014?
-(o 143 (yes 90) (* weak 1/2))
+(o 143 (yes 90) (* weak 1/3))
 
 ; Will the silver nanowire ink touch sensitive screens being developed by 3M and Cambrios be in commercially available smartphones by the end of 2015?
 (o 363 (yes 33) weak)
@@ -339,7 +339,7 @@
 (o 43 `[2 3 1 1 ,(* 20 .8)] (* 0.55 strong))
 
 ; On June 2014 what will be the processor generation of the Top 500 winner? 
-(o 42 '[10 5 500 10 1] strong)
+(o 42 '[10 1 500 5 .1] strong)
 
 ; On November 2014 what will be the processor generation of the Top 500 winner? 
 (o 46 '[10 5 150 10 1] 1.1)
@@ -457,7 +457,7 @@
 (o 321 '[0.096 0.857 0.026 0 0] weak)
 
 ; How many IBM-manufactured supercomputers will make the top 10 of the June 2014 TOP500 world's fastest supercomputer rankings?
-(o 11 '[0 4 5 0] weak)
+(o 11 '[0 5 5 0] (/ weak 4))
 
 ; Will Hewlett-Packard comprise at least 40% of the Vendors' System Share on the Top500 Supercomputers List compiled in June 2014?
 (o 15 (yes 50) 0.05)
@@ -496,7 +496,7 @@
 (o 385 (yes 50) weak)
 
 ; Will a hurricane or tropical storm form in the Atlantic-Caribbean-Gulf of Mexico region in June 2014?
-(o 408 (yes 40.8) weak)
+(o 408 (yes 28.4) weak)
 
 ; Will the USPTO issue more than 750 nanotechnology class 977 patents in the first six months of 2014 (1/1/14-6/30/14)?
 (o 185 (yes 2) weak)
@@ -547,10 +547,10 @@
 (o 726 '[2 1 2] weak)
 
 ; MH370 search days
-(o 727 '[1 1] 0.1)
+(o 727 '[1 1] 0.5)
 
 ; MH370 search contract
-(o 728 '[1 1] 0.1)
+(o 728 '[1 1] 0.5)
 
 ; When will the traversal conjecture be proven?
 (o 29 '[1 2 3 4 5])

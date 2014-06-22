@@ -41,6 +41,12 @@
 	 )
 
 (define/contract
+  (have-question? id #:question-database [q-d (question-database)])
+  (->* (natural-number/c) (#:question-database question-database/c) (or/c #t #f))
+
+  (hash-has-key? q-d id))
+
+(define/contract
   (fetch-question id #:question-database [q-d (question-database)])
   (->* (natural-number/c) (#:question-database question-database/c) question/c)
 
@@ -85,7 +91,7 @@
 
   (hash-keys q-d))
 
-(provide fetch-question fetch-full-question all-question-ids)
+(provide fetch-question fetch-full-question all-question-ids have-question?)
 
 (struct category [id name] #:transparent #:constructor-name make-category)
 
@@ -258,7 +264,7 @@
   (if (hash-has-key? (trade-database) user-id)
       (hash-ref (trade-database) user-id)
       (let* ([utpath (build-path "ut" (number->string user-id))]
-	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age 3600))])
+	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age 1200))])
 	(hash-set! (trade-database) user-id v)
 	v)))
 

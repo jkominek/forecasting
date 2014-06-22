@@ -5,18 +5,29 @@
 	 (file "/home/jkominek/forecasting/utils.rkt")
 	 )
 
+(define my-user-id (make-parameter 296))
+
+(void
+ (command-line
+  #:program "wherearemypoints"
+  #:once-each
+  [("--uid") user-id
+   "User ID to investigate"
+   (my-user-id (string->number user-id))]
+  ))
+
 (question-database
  (load-question-database-url/cache-to-file
   *standard-question-list-url* "data.json"))
-
-(define my-user-id 296)
 
 (define standings (make-hash))
 (define expected (make-hash))
 (define tied-up (make-hash))
 
-(for ([trade (fetch-user-trades my-user-id)])
+(for ([trade (fetch-user-trades (my-user-id))]
+      #:when (have-question? (hash-ref trade 'question_id)))
   (define q-id (hash-ref trade 'question_id))
+  (printf "~a~n" q-id)
   (define q (fetch-question q-id))
 
   (when (and (question-visible? q)
