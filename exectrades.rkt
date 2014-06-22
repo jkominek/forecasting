@@ -3,9 +3,17 @@
 (require net/cookie
          net/http-client
          json
+	 (planet bzlib/date/plt)
+	 (file "/home/jkominek/forecasting/questions.rkt")
 	 (only-in (file "/home/jkominek/forecasting/utils.rkt") lmsr-outcomes))
 
 (define cookie-header (make-parameter #f))
+
+(define/contract
+  (have-session?)
+  (-> (or/c #t #f))
+
+  (not (equal? (cookie-header) #f)))
 
 (define/contract
   (get-connection)
@@ -83,9 +91,41 @@
                          #:headers (list "Accept: application/json"
 					 (cookie-header))))
 
-  (let ([trade (hash-ref (read-json body-port) 'trade)])
-    ; do some stuff here
-    trade)
+  (let ([json (read-json body-port)])
+    (if (hash-has-key? json 'trade)
+	(hash-ref json 'trade)
+	#f))
   )
 
-(provide get-connection log-in make-trade)
+(define/contract
+  (fetch-latest-trades #:hc [hc (get-connection)])
+  (->* ()
+       (#:hc http-conn?)
+       (hash/c natural-number/c jsexpr?))
+  (define-values
+    (status-line headers body-port)
+    (http-conn-sendrecv! hc "/users/relevant_activities"
+                         #:method "GET"
+                         #:content-decode '()
+                         #:headers (list "Accept: application/json"
+                                         (cookie-header))))
+
+  ;(printf "~a~n~a~n" status-line headers)
+
+  (define trades (hash-ref (read-json body-port) 'trades))
+
+  (define latest (make-hash))
+
+  (for ([trade trades])
+    ;(printf "~a~n" (hash-keys trade))
+    (define q-id (hash-ref trade 'question_id))
+    (if (hash-has-key? latest q-id)
+	(when (date<? (trade-created-at (hash-ref latest q-id))
+		      (trade-created-at trade))
+	  (hash-set! latest q-id trade))
+	(hash-set! latest q-id trade))
+    )
+
+  latest)
+
+(provide get-connection log-in make-trade fetch-latest-trades have-session?)

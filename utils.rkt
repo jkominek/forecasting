@@ -92,7 +92,7 @@
  (lambda ()
    (for ([i (in-naturals)])
      (channel-put rate-limiter i)
-     (sleep 5)))))
+     (sleep 1)))))
 
 (define (get-gzip-pure-port url-string)
   ; prevents us from hitting the web site very hard

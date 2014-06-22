@@ -52,6 +52,12 @@
 
   (hash-ref q-d id))
 
+(define/contract
+  (update-question id newq #:question-database [q-d (question-database)])
+  (->* (natural-number/c jsexpr?) (#:question-database question-database/c) void?)
+
+  (question-database (hash-set (question-database) id newq)))
+
 (define (question-url q-id)
   (format
    "https://scicast.org/questions/show?question_id=~a&include_prob=True&include_cash=True&include_trades=True&include_comments=False&include_trade_ranges=True&include_recommendations=False"
@@ -91,7 +97,7 @@
 
   (hash-keys q-d))
 
-(provide fetch-question fetch-full-question all-question-ids have-question?)
+(provide fetch-question update-question fetch-full-question all-question-ids have-question?)
 
 (struct category [id name] #:transparent #:constructor-name make-category)
 
@@ -217,6 +223,9 @@
   
   (hash-ref t 'user))
 
+(define (trade-question t)
+  (hash-ref t 'question))
+
 (define (trade-created-at t)
   (read-iso8601 (hash-ref t 'created_at)))
 
@@ -235,7 +244,7 @@
   
   (hash-ref t 'assets_per_option))
 
-(provide trade-user trade-created-at trade-old-values trade-new-values trade-assets)
+(provide trade-user trade-question trade-created-at trade-old-values trade-new-values trade-assets)
 
 (define/contract (user-name u)
   (-> jsexpr? string?)
@@ -255,7 +264,7 @@
   (make-parameter (make-hash)))
 
 (define (user-trades-url user-id)
-  (format "https://scicast.org/trades/?user_id=~a&include_current_probs=True" user-id))
+  (format "https://scicast.org/trades/?user_id=~a&include_current_probs=False" user-id))
 
 (define/contract
   (fetch-user-trades user-id)

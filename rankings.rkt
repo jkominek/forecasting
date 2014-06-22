@@ -29,9 +29,7 @@
 
 (provide user-minimum-score)
 
-(define
-  (retrieve-history [type 'rank])
-
+(define (retrieve-history [type 'rank])
   (define history (make-hash))
   (for ([(user-id day rank score)
 	 (in-query conn

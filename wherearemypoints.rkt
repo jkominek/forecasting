@@ -27,7 +27,6 @@
 (for ([trade (fetch-user-trades (my-user-id))]
       #:when (have-question? (hash-ref trade 'question_id)))
   (define q-id (hash-ref trade 'question_id))
-  (printf "~a~n" q-id)
   (define q (fetch-question q-id))
 
   (when (and (question-visible? q)

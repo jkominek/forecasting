@@ -215,7 +215,7 @@
 (o 149 '[1 1.5 2 2.5 3] weak)
 
 ; Will the Axion Dark Matter Experiment detect axions by July 2014?
-(o 434 (no 98) strong)
+(o 434 (no 99.9))
 
 ; When will the first chess player achieve a rating of at least 2900?
 (o 313 '[3 3 2 2 1])
@@ -363,10 +363,10 @@
 (o 438 (yes 45) (varying-strength "2014-07-01" "2015-05-15"))
 
 ; On June 2014 what will be the (performance-weighted) gigaflops per watt of the Top 500?
-(o 72 '[95 2 1 1 1] strong)
+(o 72 '[95 2 1 0.1 0.01] strong)
 
 ; On NOV 2014 what will be the (performance-weighted) gigaflops per watt of the Top 500?
-(o 175 '[94 3 1 1 1] (* 2/3 strong))
+(o 175 '[94 3 1 0.1 0.01] (* 2/3 strong))
 
 ; In the week of November 23rd-29th 2014 will Walmart be searched more frequently than Amazon in Google Search?
 (o 649 (yes 90))
@@ -490,7 +490,7 @@
 (o 623 (yes 10) 0.1)
 
 ; Will Google incorporate infrared vision into future Google Glass models by the end of 2017?
-(o 535 (yes 50) weak)
+(o 535 (yes 49) weak)
 
 ; In 2014 will the Arctic sea ice minimum day occur after September 15th?
 (o 385 (yes 50) weak)
@@ -547,13 +547,16 @@
 (o 726 '[2 1 2] weak)
 
 ; MH370 search days
-(o 727 '[1 1] 0.5)
+(o 727 '[1 1] 0.2)
 
 ; MH370 search contract
-(o 728 '[1 1] 0.5)
+(o 728 '[2 1] 0.2)
 
 ; When will the traversal conjecture be proven?
 (o 29 '[1 2 3 4 5])
 
 ; Worldwide Semiconductor Sales reached US$305.6 billion in 2013. What will be the total for 2014?
 (o 379 '[1 2 3 4 15 5])
+
+; Will cyber threats be more costly than physical threats to the U.S. national electric grid in 2014? 
+(o 588 '[1 1] weak)
