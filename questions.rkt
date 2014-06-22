@@ -31,6 +31,9 @@
 
   (make-parameter #f))
 
+(define my-user-name (make-parameter #f))
+(define my-user-id (make-parameter #f))
+
 (define *standard-question-list-url* "https://scicast.org/questions/?include_prob=True&include_comment_count=True&include_trade_count=True&include_user_roles=False&include_question_clique=False&include_question_relationship=False")
 
 (provide question-database load-question-database
@@ -128,6 +131,12 @@
 	(read-iso8601 v)
 	#f)))
 
+(define (question-settled-at q)
+  (let ([v (hash-ref (hash-ref q 'question) 'settled_at #f)])
+    (if (string? v)
+	(read-iso8601 v)
+	#f)))
+
 (define (question-created-at q)
   (read-iso8601 (hash-ref (hash-ref q 'question) 'created_at)))
 
@@ -183,7 +192,7 @@
 
 (provide question-categories question-name question-short-name question-id
 	 question-probability question-keywords question-updated-at
-	 question-settlement-at question-created-at question-probability-at
+	 question-settlement-at question-settled-at question-created-at question-probability-at
 	 question-challenge question-description question-visible?
 	 question-locked? question-choices question-choice
 	 question-trade-count question-comment-count question-trades
@@ -234,3 +243,23 @@
 
 (provide user-name user-id)
 
+(define/contract
+  trade-database
+  (parameter/c (hash/c natural-number/c (listof any/c)))
+  (make-parameter (make-hash)))
+
+(define (user-trades-url user-id)
+  (format "https://scicast.org/trades/?user_id=~a&include_current_probs=True" user-id))
+
+(define/contract
+  (fetch-user-trades user-id)
+  (-> natural-number/c jsexpr?)
+
+  (if (hash-has-key? (trade-database) user-id)
+      (hash-ref (trade-database) user-id)
+      (let* ([utpath (build-path "ut" (number->string user-id))]
+	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age 3600))])
+	(hash-set! (trade-database) user-id v)
+	v)))
+
+(provide fetch-user-trades)

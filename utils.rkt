@@ -36,7 +36,7 @@
 	    (let ([v (* 1010.81 (exp (* -0.0107473 days-remaining)))])
 	      (- (cond
 		  [(> v 1000.0) 1000.0]
-		  [(< v 1.0) 1.0]
+		  [(< v 1.0) 5.0]
 		  [else v])))))
       -1.0))
 
@@ -97,7 +97,7 @@
 (define (get-gzip-pure-port url-string)
   ; prevents us from hitting the web site very hard
   (channel-get rate-limiter)
-  (printf "fetching from network!~n")
+  ;(printf "fetching from network!~n")
 
   (define p (get-pure-port (string->url url-string)
 			   '("Accept-encoding: gzip")))

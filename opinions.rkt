@@ -197,7 +197,7 @@
 (o 330 (no 90) weak)
 
 ; Will there be a new digital currency based on a P2P network, whose real money supply will be valued at more than $1 billion in 2014?
-(o 102 (yes 33) weak)
+(o 102 (yes 25) weak)
 
 ; Will Apple integrate a sapphire crystal solar power screen in its new iPhone6 due to be released later in 2014?
 (o 354 (no 95))
@@ -272,10 +272,10 @@
 				     #:final-strength strong))
 
 ; Which of the following changes will be reported about "Status and trends of linguistic diversity and numbers of speakers of indigenous languages" in the fourth edition of the Global Biodiversity Outlook report?
-(o 99 '[0.5 10 1 0.1] (/ weak 4))
+(o 99 '[0.5 10 1 0.1] (/ weak 5))
 
 ; Will the NASA's Mars Atmosphere and Volatile Evolution (MAVEN) spacescraft launched on November 17 2013 enter the Mars orbit by the end of September 2014?
-(o 143 (yes 90) weak)
+(o 143 (yes 90) (* weak 1/2))
 
 ; Will the silver nanowire ink touch sensitive screens being developed by 3M and Cambrios be in commercially available smartphones by the end of 2015?
 (o 363 (yes 33) weak)
@@ -436,7 +436,7 @@
 (o 12 (yes 10) weak)
 
 ; On June 2014 what will be the (performance-weighted) gigaflops per core of the Top 500?
-(o 73 '[10 100 10 1 0] (* 2 strong))
+(o 73 '[2 100 2 0 0] (* 2 strong))
 
 ; On NOV 2014 what will be the (performance-weighted) gigaflops per core of the Top 500? (177)
 (o 177 '[1 60 40 1 0] strong)
@@ -445,7 +445,7 @@
 (o 226 (yes 63.1) weak)
 
 ; Will Google announce development of an Android Silver class of devices at or before the Google I/O 2014 Conference?
-(o 700 (yes 15) 0.05)
+(o 700 (yes 33) 0.05)
 
 ; Will Google announce development of an Android In-Car System at or before the Google I/O 2014 Conference?
 (o 698 (yes 55) 0.05)
@@ -511,7 +511,7 @@
 (o 566 '[1 10 11 10 8] weak)
 
 ; world produced 4.4 zettabytes in 2013. how much in 2014?
-(o 620 '[1 2 9 10 6] weak)
+(o 620 '[0.2 2 9 10 6] weak)
 
 ; Will the Mars Curiosity Rover discover organic matter on Mars by September 1 2014?
 (o 127 (no 100))
@@ -527,3 +527,33 @@
 
 ; Will a Tesla electric car with a base price under $35,000 be for sale in the U.S. before the end of 2016? 
 (o 717 (yes 45))
+
+; "When will free-form gestures be used as access passwords in commercial touchscreen mobile devices?"
+(o 724 '[1 1 2 2] weak)
+
+; Which team will win the 2014 AUVSI RoboBoat Competition?
+(o 645 (build-list 16 (lambda x 1)) 0.001)
+
+; pluto's exact size
+(o 723 '[1 1] weak) ; range from 2280km to 2400km
+
+; free-form gesures be used as access passwords in commercial touchscreen mobile devices?
+(o 724 '[10 10 10 5])
+
+; high-precision measurement of antiproton's magnetic moment?
+(o 725 '[10 11 12 15] weak)
+
+; MH370 debris
+(o 726 '[2 1 2] weak)
+
+; MH370 search days
+(o 727 '[1 1] 0.1)
+
+; MH370 search contract
+(o 728 '[1 1] 0.1)
+
+; When will the traversal conjecture be proven?
+(o 29 '[1 2 3 4 5])
+
+; Worldwide Semiconductor Sales reached US$305.6 billion in 2013. What will be the total for 2014?
+(o 379 '[1 2 3 4 15 5])

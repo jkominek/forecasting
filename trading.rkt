@@ -302,12 +302,14 @@
   (summarize-effect-of-trades
    question new-probabilities-list
    #:beliefs [beliefs #f]
+   #:debt-limit [debt-limit (maximum-points-tied-up (question-settlement-at question))]
    #:summary-hash [sh (make-hash)]
    #:user-name my-user-name)
   (->* ((hash/c symbol? any/c)
 	(non-empty-listof (non-empty-listof (real-in 0.0 1.0)))
 	#:user-name string?)
-       (#:beliefs (or/c #f (non-empty-listof (real-in 0.0 1.0)))
+       (#:debt-limit real?
+	#:beliefs (or/c #f (non-empty-listof (real-in 0.0 1.0)))
 	#:summary-hash (hash/c symbol? number?))
        string?)
 
@@ -342,7 +344,7 @@
   (string-join
    (list
     (cat "debt limit:" 15)
-    (cat (maximum-points-tied-up (question-settlement-at question)))
+    (cat debt-limit)
     "\n"
     (cat "belief:" 15)
     (if beliefs
@@ -372,7 +374,7 @@
                                        "  ↓  " "     ")))
 	     "  "
 	     (cat (if (>= choice 0)
-		      (choice-name (question-choice question choice))
+		      (string-trim #:repeat? #t (choice-name (question-choice question choice)))
 		      "???") -16)
 	     
              "\n"
