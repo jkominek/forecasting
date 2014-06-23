@@ -117,6 +117,14 @@
 	(flush-output dest-port)
 	(close-output-port dest-port)))
     (open-input-file path)))
+
+(define (eat-up-everything)
+  (let/ec done
+    (for ([x (in-naturals)])
+         (define v (sync/timeout 0.1 (current-input-port)))
+         (if (input-port? v)
+             (read-byte v)
+             (done (void))))))
   
 (provide normalize-probabilities
 	 maximum-points-tied-up
@@ -124,4 +132,5 @@
          lmsr-outcomes
          shift-choice-probability
 	 open-url/cache-to-file
+	 eat-up-everything
 	 )

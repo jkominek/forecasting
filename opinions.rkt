@@ -339,7 +339,7 @@
 (o 43 `[2 3 1 1 ,(* 20 .8)] (* 0.55 strong))
 
 ; On June 2014 what will be the processor generation of the Top 500 winner? 
-(o 42 '[10 1 500 5 .1] strong)
+(o 42 '[10 1 500 5 .1] weak)
 
 ; On November 2014 what will be the processor generation of the Top 500 winner? 
 (o 46 '[10 5 150 10 1] 1.1)
@@ -351,7 +351,7 @@
 (o 227 (no 90) weak)
 
 ; Will China have at least 30 nuclear power reactors in operation by the start of 2015?
-(o 173 (no 95))
+(o 173 (no 95) (/ weak 3))
 
 ; Will evidence of proton decay be reported in the scientific literature by the end of 2017?
 (o 508 (no 95) weak)
@@ -517,7 +517,7 @@
 (o 127 (no 100))
 
 ; which smallsat company will be the first to provide daily re-imaging of the earth?
-(o 714 '[40 100 10 75 60 50])
+(o 714 '[40 80 10 75 80 50])
 
 ; When the consumer version of Google Glass is released to the general public, what will its price be? 
 (o 399 '[1 8 4])
@@ -550,7 +550,7 @@
 (o 727 '[1 1] 0.2)
 
 ; MH370 search contract
-(o 728 '[2 1] 0.2)
+(o 728 '[1 1] 0.1)
 
 ; When will the traversal conjecture be proven?
 (o 29 '[1 2 3 4 5])

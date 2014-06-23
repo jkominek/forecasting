@@ -56,7 +56,9 @@
   (update-question id newq #:question-database [q-d (question-database)])
   (->* (natural-number/c jsexpr?) (#:question-database question-database/c) void?)
 
-  (question-database (hash-set (question-database) id newq)))
+  (question-database (hash-set (question-database) id newq))
+
+  (void))
 
 (define (question-url q-id)
   (format

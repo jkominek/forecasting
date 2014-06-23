@@ -31,8 +31,7 @@
 (define monitor (make-parameter #f))
 
 (question-database
- (load-question-database-url/cache-to-file
-  *standard-question-list-url* "data.json"))
+ (load-question-database-url/cache-to-file  *standard-question-list-url* "data.json"))
 
 (void
  (command-line
@@ -169,8 +168,9 @@
 	    #:trade-limit 5
 	    ))
 
-	 (async-channel-put ready-trades
-			    (list q-id q opinion trade-sequence))))))
+	 (when (> (length trade-sequence) 0)
+	   (async-channel-put ready-trades
+			      (list q-id q opinion trade-sequence)))))))
   )
 
 (define (start-monitoring)
@@ -188,8 +188,8 @@
 	    (question-name (fetch-question (hash-ref trade 'question_id))))
 
     (define q-id (hash-ref trade 'question_id))
-    (define q (fetch-question q-id))
-    (update-question q-id (hash-set q 'prob (trade-new-values trade)))
+    (define q (hash-set (fetch-question q-id) 'prob (trade-new-values trade)))
+    (update-question q-id q)
     (define opinion (get-opinion q-id))
 
     (define trade-sequence
@@ -206,10 +206,14 @@
        #:trade-limit 5
        ))
 
-    (async-channel-put ready-trades
-		       (list q-id q opinion trade-sequence)))
+    (when (> (length trade-sequence) 0)
+      (async-channel-put ready-trades
+			 (list q-id q opinion trade-sequence)))
+    )
+
   (sleep (+ 60 (if found-stuff 0 15) (random 10)))
-  (start-monitoring))
+  (start-monitoring)
+  )
 
 (define (display-ramifications question-ids choice probability)
   (for ([q-id (in-list question-ids)])
@@ -277,55 +281,75 @@
        (list q-id q opinion trade-sequence)
        from-channel)
 
-      (when (> (length trade-sequence) 0)
-	    (define summary-details (make-hash))
-	    (define summary
-	      (summarize-effect-of-trades
-	       q trade-sequence
-	       #:initial-assets (hash-ref standings q-id (empty-assets q))
-	       #:user-name (my-user-name)
-	       #:summary-hash summary-details
-	       #:debt-limit (* (opinion-strength opinion)
-			       (maximum-points-tied-up (question-settlement-at q)))
-	       #:beliefs (opinion-beliefs opinion)))
-	    (when (or (> (hash-ref summary-details 'credit) 2.0)
-		      (> (hash-ref summary-details 'current-score-improvement)
-			 (max 10.0
-			      (* 1/10 (hash-ref summary-details 'initial-current-score))))
-		      (> (hash-ref summary-details 'total-Δassets) 25)
-		      (if (hash-has-key? summary-details 'final-score-improvement)
-			  (or (and (< (hash-ref summary-details 'initial-final-score) 10.0)
-				   (> (hash-ref summary-details 'final-score-improvement) 1.0))
-			      (and (>= (hash-ref summary-details 'initial-final-score) 10.0)
-				   (> (hash-ref summary-details 'final-score-improvement)
-				      (* 1/10 (hash-ref summary-details 'initial-final-score)))))
-			  #f))
-		  (printf "(~a) ~a~n~ https://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
-			  (question-id q)
-			  (question-name q)
-			  (question-id q)
-			  summary)
+      (printf "got ~a in on the channel. ~a long trade seq~n" q-id (length trade-sequence))
 
-		  (when (web-trades)
-					; before prompting the user, read any crap
-					; still in the current-input buffers, so we
-					; can't be confused about which trade they
-					; want us to execute
-					;(read-bytes-avail!* (make-bytes 4096))
-			(printf "execute trade? ")
-			(when (equal? (string-ref (read-line) 0) #\y)
-			      (unless (have-session?)
-				      (log-in "jkominek" "***REMOVED***"))
-			      (let ([trade
-				     (make-trade q-id (question-probability q)
-						 (last trade-sequence))])
-				(if trade
-				    (begin
-				      (printf "trade successful~n")
-				      (update-standings q-id (trade-assets trade)))
-				    (printf "failed to make trade~n")))))
-		  ))
+      (define summary-details (make-hash))
+      (printf "   considering ~a shift to ~a~n" q-id
+	      (map (lambda (x) (exact-round (* 100 x)))
+		   (last trade-sequence)))
 
+      (define summary
+	(summarize-effect-of-trades
+	 q
+	 trade-sequence
+	 #:initial-assets (hash-ref standings q-id (empty-assets q))
+	 #:user-name (my-user-name)
+	 #:summary-hash summary-details
+	 #:debt-limit (* (opinion-strength opinion)
+			 (maximum-points-tied-up (question-settlement-at q)))
+	 #:beliefs (opinion-beliefs opinion)
+	 ))
+
+      (printf "(~a) ~a~n~ https://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
+	      (question-id q)
+	      (question-name q)
+	      (question-id q)
+	      summary)
+
+      (unless (or (> (hash-ref summary-details 'credit) 2.0)
+		  (> (hash-ref summary-details 'current-score-improvement)
+		     (max 10.0
+			  (* 1/10 (hash-ref summary-details 'initial-current-score))))
+		  (> (hash-ref summary-details 'total-Δassets) 25)
+		  (if (hash-has-key? summary-details 'final-score-improvement)
+		      (or (and (< (hash-ref summary-details 'initial-final-score) 10.0)
+			       (> (hash-ref summary-details 'final-score-improvement) 1.0))
+			  (and (>= (hash-ref summary-details 'initial-final-score) 10.0)
+			       (> (hash-ref summary-details 'final-score-improvement)
+				  (* 1/10 (hash-ref summary-details 'initial-final-score)))))
+		      #f))
+	(printf "   insufficiently awesome~n")
+	;(continue (void))
+	)
+
+      (unless (web-trades)
+	(continue (void)))
+
+      ; before prompting the user, read any crap
+      ; still in the current-input buffers, so we
+      ; can't be confused about which trade they
+      ; want us to execute
+      (eat-up-everything)
+
+      (unless #f ;(= 728 q-id)
+	(printf "execute trade? ")
+	(unless (regexp-match #rx"^y" (read-line))
+	  (continue (void))))
+
+      (unless (have-session?)
+	(log-in "jkominek" "***REMOVED***"))
+
+      (let ([trade
+	     (make-trade q-id (question-probability q)
+			 (last trade-sequence))])
+	(if trade
+	    (begin
+	      (printf "trade successful~n")
+	      (printf "standings were@ ~a" (hash-ref standings q-id))
+	      (update-standings q-id (trade-assets trade))
+	      (printf " now@ ~a~n" (hash-ref standings q-id))
+	      )
+	    (printf "failed to make trade~n")))
       ))) ; for, let/ec
 
 (for ([thread threads])

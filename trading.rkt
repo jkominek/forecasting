@@ -250,7 +250,8 @@
   new-probabilities)
 
 (define (find-optimal-trade-sequence
-         utility-function comparison-function
+         utility-function
+	 comparison-function
          #:assets initial-assets
          #:debt-limit debt-limit
          #:beliefs beliefs
