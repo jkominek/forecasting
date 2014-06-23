@@ -174,7 +174,7 @@
   )
 
 (define (start-monitoring)
-  (sleep 30)
+  (sleep 60)
   (printf "checking ~a~n" (date->string (current-date)))
   (define trades (fetch-latest-trades))
   (define found-stuff #f)
@@ -211,7 +211,7 @@
 			 (list q-id q opinion trade-sequence)))
     )
 
-  (sleep (+ 60 (if found-stuff 0 15) (random 10)))
+  (sleep (+ 60 (if found-stuff 0 (random 60))))
   (start-monitoring)
   )
 
