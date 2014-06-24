@@ -73,7 +73,7 @@
 			(if (> (abs (- o n)) diff)
 			    (values idx (abs (- o n)))
 			    (values dim diff)))])
-	  dim)))
+	  (add1 dim))))
 
   (define new-value-str (string-join (map n->s new) "%2C"))
   (define old-value-str (string-join (map n->s old) "%2C"))
