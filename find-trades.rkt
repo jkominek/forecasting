@@ -173,7 +173,7 @@
 			      (list q-id q opinion trade-sequence)))))))
   )
 
-(define (start-monitoring)
+(define (start-monitoring [delay-chunk 10])
   (sleep 60)
   (printf "checking ~a~n" (date->string (current-date)))
   (define trades (fetch-latest-trades))
@@ -184,7 +184,7 @@
 		    (seen-question-to (hash-ref trade 'question_id) (trade-created-at trade))))
     (set! found-stuff #t)
     (printf "~a traded on ~a~n"
-	    (hash-ref trade 'user_id)
+	    (user-name (trade-user trade))
 	    (question-name (fetch-question (hash-ref trade 'question_id))))
 
     (define q-id (hash-ref trade 'question_id))
@@ -210,9 +210,14 @@
       (async-channel-put ready-trades
 			 (list q-id q opinion trade-sequence)))
     )
-
-  (sleep (+ 60 (if found-stuff 0 (random 60))))
-  (start-monitoring)
+  (flush-output)
+  (if found-stuff
+      (begin
+        (sleep 60)
+        (start-monitoring))
+      (begin
+        (sleep (+ 60 (* delay-chunk 1/4) (random (* 3/4 delay-chunk))))
+        (start-monitoring (+ 60 delay-chunk))))
   )
 
 (define (display-ramifications question-ids choice probability)
@@ -248,8 +253,7 @@
  [(pair? (ramifications))
   (let ([choice (car (ramifications))]
 	[probability (cdr (ramifications))])
-    (display-ramifications (question-ids) choice probability)
-    (exit))]
+    (display-ramifications (question-ids) choice probability))]
 
  [else
   (perform-opinionated-search (filter have-opinion? (question-ids)))]
@@ -288,6 +292,8 @@
 	      (map (lambda (x) (exact-round (* 100 x)))
 		   (last trade-sequence)))
 
+      (flush-output)
+
       (define summary
 	(summarize-effect-of-trades
 	 q
@@ -300,27 +306,35 @@
 	 #:beliefs (opinion-beliefs opinion)
 	 ))
 
+      (define potential-improvements
+        `((credit .
+            ,(> (hash-ref summary-details 'credit) 2.0))
+          (current-score .
+            ,(> (hash-ref summary-details 'current-score-improvement)
+                (max 10.0
+                     (* 1/10 (hash-ref summary-details 'initial-current-score)))))
+          (total-assets .
+            ,(> (hash-ref summary-details 'total-Δassets) 25))
+          (final-score .
+            ,(if (hash-has-key? summary-details 'final-score-improvement)
+                 (or (and (< (hash-ref summary-details 'initial-final-score) 10.0)
+                          (> (hash-ref summary-details 'final-score-improvement) 1.0))
+                     (and (>= (hash-ref summary-details 'initial-final-score) 10.0)
+                          (> (hash-ref summary-details 'final-score-improvement)
+                             (* 1/10 (hash-ref summary-details 'initial-final-score)))))
+                 #f))
+          ))
+
+      (unless (for/fold ([something-improved? #f])
+                        ([thing potential-improvements])
+                        (or something-improved? (cdr thing)))
+        (continue (void)))
+
       (printf "(~a) ~a~n~ https://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
 	      (question-id q)
 	      (question-name q)
 	      (question-id q)
 	      summary)
-
-      (unless (or (> (hash-ref summary-details 'credit) 2.0)
-		  (> (hash-ref summary-details 'current-score-improvement)
-		     (max 10.0
-			  (* 1/10 (hash-ref summary-details 'initial-current-score))))
-		  (> (hash-ref summary-details 'total-Δassets) 25)
-		  (if (hash-has-key? summary-details 'final-score-improvement)
-		      (or (and (< (hash-ref summary-details 'initial-final-score) 10.0)
-			       (> (hash-ref summary-details 'final-score-improvement) 1.0))
-			  (and (>= (hash-ref summary-details 'initial-final-score) 10.0)
-			       (> (hash-ref summary-details 'final-score-improvement)
-				  (* 1/10 (hash-ref summary-details 'initial-final-score)))))
-		      #f))
-	(printf "   insufficiently awesome~n")
-	;(continue (void))
-	)
 
       (unless (web-trades)
 	(continue (void)))
@@ -331,7 +345,7 @@
       ; want us to execute
       (eat-up-everything)
 
-      (unless #f ;(= 728 q-id)
+      (unless #t ;(= 728 q-id)
 	(printf "execute trade? ")
 	(unless (regexp-match #rx"^y" (read-line))
 	  (continue (void))))

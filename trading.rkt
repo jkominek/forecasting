@@ -282,13 +282,6 @@
            #:debt-limit debt-limit
            #:trade-limit (sub1 trade-limit)))))
 
-(define (pretty-probability-list l)
-  (format "[~a ]" (string-join (map (lambda (v) (cat (* 100 v) 5 1. 'inexact)) l))))
-(define (pretty-asset-list l)
-  (format "[~a ]" (string-join (map (lambda (v) (cat (exact-round v) 5)) l))))
-(define (pretty-string-list l)
-  (format "[~a ]" (string-join l)))
-
 (define (determine-choice ps)
   ; better hope that one of the choices matches
   ; or this will explode. hooray

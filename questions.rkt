@@ -20,10 +20,10 @@
 	      q-rec))))
 
 (define/contract
-  (load-question-database-url/cache-to-file url path)
-  (-> string? path-string? question-database/c)
+  (load-question-database-url/cache-to-file url path #:max-age [max-age 1200])
+  (->* (string? path-string?) (#:max-age natural-number/c) question-database/c)
   (load-question-database
-    (open-url/cache-to-file url path)))
+    (open-url/cache-to-file url path #:max-age max-age)))
 
 (define/contract
   question-database

@@ -6,6 +6,7 @@
 	 (only-in srfi/54 cat)
 	 net/url
 	 racket/port
+	 racket/string
 	 file/gunzip)
 
 (provide cat)
@@ -33,10 +34,10 @@
 	     (date- settled-at (seconds->date (current-seconds)))])
 	(if (< days-remaining 0)
 	    0.0
-	    (let ([v (* 1010.81 (exp (* -0.0107473 days-remaining)))])
+	    (let ([v (* 1.5 1010.81 (exp (* -0.0107473 days-remaining)))])
 	      (- (cond
 		  [(> v 1000.0) 1000.0]
-		  [(< v 1.0) 5.0]
+		  [(< v 7.5) 7.5]
 		  [else v])))))
       -1.0))
 
@@ -125,6 +126,13 @@
          (if (input-port? v)
              (read-byte v)
              (done (void))))))
+
+(define (pretty-probability-list l)
+  (format "[~a ]" (string-join (map (lambda (v) (cat (* 100 v) 5 1. 'inexact)) l))))
+(define (pretty-asset-list l)
+  (format "[~a ]" (string-join (map (lambda (v) (cat (exact-round v) 5)) l))))
+(define (pretty-string-list l)
+  (format "[~a ]" (string-join l)))
   
 (provide normalize-probabilities
 	 maximum-points-tied-up
@@ -133,4 +141,7 @@
          shift-choice-probability
 	 open-url/cache-to-file
 	 eat-up-everything
+	 pretty-probability-list
+	 pretty-asset-list
+	 pretty-string-list
 	 )
