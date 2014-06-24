@@ -62,6 +62,10 @@
   (let ([100-p (- 100 p)])
     (list p 100-p)))
 
+(define (linear-scale v #:lo lo #:hi hi)
+  (let ([x (/ (- v lo) (- hi lo))])
+    (list (- 1 x) x)))
+
 (define (goes-to f initial
 		 #:start start #:stop stop
 		 #:flat-before [flat-before #t])
@@ -97,8 +101,62 @@
 		      (- stop start))])
 	(+ (* (- final initial) scale) initial)))))
 
+; Which of the following changes will be reported about "trends in extent of selected biomes, ecosystems, and habitats" in the fourth edition of the Global Biodiversity Outlook report?
+(o 2 '[20 50 30 5] weak)
+
+; Which of the following changes will be reported about "The Marine Trophic Index" in the fourth edition of the Global Biodiversity Outlook report?
+(o 3 '[20 50 30 5] weak)
+
+; Which of the following changes will be reported about "trends in abundance and distribution of selected species " in the fourth edition of the Global Biodiversity Outlook report?
+(o 4 '[20 50 30 5] weak)
+
+; Which of the following changes will be reported about "Water quality of aquatic ecosystems" in the fourth edition of the Global Biodiversity Outlook report?
+;(o 5 '[20 50 30 5] weak)
+
+; Will Australia reduce its greenhouse gas emissions unconditionally by 5% below their 2000 levels by January 01, 2020?
+(o 21 (yes 44))
+
+; Will a proof be published by 2050 showing Matrix Multiplication in O(n^{2+ε}) time, for every constant ε > 0?
+;(o 57 (no 60))
+
+; Will there be a 50%-effective malaria vaccine available for general use before 2015?
+(o 84 (no 75) weak)
+
+; Who will win the DARPA Robotics Challenge Finals in 2014?
+(o 140 '[1 1 1 1 1 1 1 1 0.5] weak)
+
+; Will Rosetta rendezvous with Comet 67P/Churyumov-Gerasimenko? 
+(o 169 (yes 90))
+
+; Will the US National Security Agency build a gate model quantum computer before the end of 2017?
+(o 437 (yes 50) weak)
+
+; When will operation of AAM systems be considered a unique trade skill requiring specific licensing as defined by the National Council of Examiners for Engineering and Surveying (NCEES)?
+(o 549 '[1 2 3 4 5 6 7])
+
+; A “smart city” runs important systems—transit, water, power, trash removal—entirely by computers. When will a city with a population of at least one million people adopt smart city technology?
+(o 568 '[1 2 3 4 5 6 7 8 9 10 11 12])
+
+; Will Microsoft Office for iPad become one app instead of three apps (Word, Excel and Powerpoint) by the end of 2014?
+(o 580 (no 75) weak)
+
+; Will there be a RFID malware attack by the end of 2014?
+(o 583 (no 90) weak)
+
+; When will the first reported collision occur between an autonomous vehicle and a human driven vehicle on a public road? 
+(o 638 '[5 4 3 2 1])
+
+; Will researchers provide a practical demonstration of the newly discovered weakness in the discrete logarithm problem, used widely in cryptography, by December 31, 2014?
+(o 702 (yes 4))
+
+; When will reseachers announce the conversion of methane to methanol at room temperature through the use of metal-organic frameworks?
+(o 722 '[1 2 3 4 5 6 7 8 9 9] weak)
+
+; When Microsoft launches Skype Translator, the real-time language translation service for its video chat application Skype, will it be a free add-on?
+(o 706 (yes 85))
+
 ; When will the IPv6 traffic measured by Google surpass 4%?
-(o 344 '(0 0 0 0.997 0.003 0))
+(o 344 '(0 0 0 99.9987 0.0013 0.00001))
 
 ; what happened to mh370
 (o 365 '(0 0 0 0 0 100) (* 5 strong))
@@ -150,7 +208,7 @@
    (varying-strength "2014-09-01" "2015-09-06"))
 
 ; Will Google announce development of a smartwatch at or before the Google I/O 2014 Conference?
-(o 672 (yes 82) weak)
+(o 672 (yes 60) weak)
 
 ; Will there be at least one female winner of a Fields Medal in 2014?
 (o 462 (yes 20) 0.1)
@@ -310,7 +368,7 @@
 (o 686 (yes 55) (varying-strength "2014-06-01" "2014-12-01"))
 
 ; At its first launch, will Apple's iWatch include a sensor to measure blood glucose level non-invasively?
-(o 687 (no 80))
+(o 687 (no 85))
 
 ; Will Google's glucose monitoring "smart" contact lenses get FDA approval by the end of 2016?
 (o 688 (no 49) (varying-strength "2014-07-01" "2015-07-01"))
@@ -319,14 +377,18 @@
 (o 453 (goes-to no 66.666 #:start "2014-06-15" #:stop "2017-10-01")
    (varying-strength "2014-08-01" "2017-11-01"))
 
+
 ; On June 2014 what will be the cores per socket of the Top 500 winner? 
-(o 41 '[1 2 100 2 1] strong)
+;(o 41 '[0 0 100 0 0] strong)
 
 ; On June 2014 what will be the geographic region of the Top 500 winner? 
-(o 40 '[2 100 1 1 1] strong)
+;(o 40 '[0 100 0 0 0] strong)
 
 ; On June 2014 what will be the vendor of the Top 500 winner? 
-(o 39 '[2 2 1 1 200] strong)
+;(o 39 '[0 0 0 0 200] strong)
+
+; On June 2014 what will be the processor generation of the Top 500 winner? 
+;(o 42 '[0 0 500 0 0])
 
 
 ; On November 2014 what will be the cores per socket of the Top 500 winner? 
@@ -337,9 +399,6 @@
 
 ; On November 2014 what will be the vendor of the Top 500 winner? 
 (o 43 `[2 3 1 1 ,(* 20 .8)] (* 0.55 strong))
-
-; On June 2014 what will be the processor generation of the Top 500 winner? 
-(o 42 '[10 1 500 5 .1] weak)
 
 ; On November 2014 what will be the processor generation of the Top 500 winner? 
 (o 46 '[10 5 150 10 1] 1.1)
@@ -363,7 +422,8 @@
 (o 438 (yes 45) (varying-strength "2014-07-01" "2015-05-15"))
 
 ; On June 2014 what will be the (performance-weighted) gigaflops per watt of the Top 500?
-(o 72 '[95 2 1 0.1 0.01] strong)
+; STILL NEED TO UPDATE
+;(o 72 '[99 1 0 0 0] strong)
 
 ; On NOV 2014 what will be the (performance-weighted) gigaflops per watt of the Top 500?
 (o 175 '[94 3 1 0.1 0.01] (* 2/3 strong))
@@ -375,53 +435,58 @@
 (o 696 '[2 3 4 3 2 1] weak)
 
 ; On June 2014 what will be the Top 500 performance share by geographic region?
-(let ([performance
-       (list (* 1.10 120339438)
-	     (* 1.11 72809408)
-	     (* 1.08 31768483)
-	     (* 1.08 11670158)
-	     (* 1.05 (+ 3040297 3864640 2302522 2180151 1479371)))])
-  (o 54 performance))
+; up to date
+;(let ([performance
+;       (list (* 124825909)
+;	     (* 78651505)
+;	     (* 35330764)
+;	     (* 17099688)
+;	     (+ 2898745 6736440 2502392 2329579 2472259 1031365))])
+;  (o 54 performance))
 
 ; On November 2014 what will be the Top 500 performance share by geographic region?
+; up to date
 (let ([performance
-       (list (* 1.10 1.09 120339438)
-	     (* 1.11 1.10 72809408)
-	     (* 1.08 1.07 31768483)
-	     (* 1.08 1.07 11670158)
-	     (* 1.05 1.04 (+ 3040297 3864640 2302522 2180151 1479371)))])
+       (list (* 1.10 124825909)
+	     (* 1.11 78651505)
+	     (* 1.08 35330764)
+	     (* 1.08 17099688)
+	     (* 1.05 (+ 2898745 6736440 2502392 2329579 2472259 1031365)))])
   (o 48 performance))
 
 ; On June 2014 what will be the Top 500 performance share by cores per socket?
-(let ([performance
-       (list (+ (* 0.98 6054483) 25323699)
-	     97765893
-	     (+ 6291384 42786013)
-	     (* 1.02 71736595)
-	     10000000)])
-  (o 55 performance))
+; up to date
+;(let ([performance
+;       (list (+ 4451142 21457755)
+;	     99215856
+;	     (+ 23363299 53226459)
+;	     72366076
+;	     0)])
+ ; (o 55 performance))
 
 ; On June 2014 what will be the Top 500 performance share by vendor?
+; up to date
 (let ([performance
-       (list 79020195
-	     41823840
-	     38733979
-	     8914147
-	     81588306)])
-  (o 53 performance)
+       (list 87748559
+	     49817954
+	     42817488
+	     10912241
+	     82784343)])
+  ;(o 53 performance)
 
 ; On November 2014 what will be the Top 500 performance share by vendor?
   (o 47 performance)
   )
 
 ; Will Amazon deliver its first package using an unmanned aerial vehicle by DEC 31 2017?
-(o 105 (yes 28) weak)
+(o 105 (yes 5) weak)
 
 ; Which of the following 2016 presidential candidates will be the first to accept Bitcoin campaign contributions? 
 (o 371 '[5 1 2 20 5 2 20] weak)
 
 ; Will the June 2014 TOP500 rankings announce that the performance of the ;500 ranked supercomputer has exceeded 150 thousand Gflops/s?
-(o 14 (yes 10) 0.1)
+; up to date
+;(o 14 (yes 0) 0.1)
 
 ; Will the Mars Curiosity Rover discover organic matter on Mars-evidence that life exists or existed on the planet-by July 1 2015?
 (o 377 (no 98))
@@ -433,13 +498,15 @@
 (o 135 (yes 15) (varying-strength "2014-06-15" "2017-10-01"))
 
 ; Will the same machine hold the ;1 rank on the Top500 and Graph500 lists compiled in June 2014?
-(o 12 (yes 10) weak)
+; up to date
+;(o 12 (yes 5) weak)
 
 ; On June 2014 what will be the (performance-weighted) gigaflops per core of the Top 500?
-(o 73 '[2 100 2 0 0] (* 2 strong))
+; close enough, we'll leave it in case i did the math wrong
+;(o 73 '[0 100 0 0 0] (* 2 strong))
 
 ; On NOV 2014 what will be the (performance-weighted) gigaflops per core of the Top 500? (177)
-(o 177 '[1 60 40 1 0] strong)
+(o 177 '[0 60 40 1 0] strong)
 
 ; In the 2013 Annual Report from the National Poison Data System (NPDS) will analgesics be the number one substance class for exposures among adults in the US?
 (o 226 (yes 63.1) weak)
@@ -457,10 +524,10 @@
 (o 321 '[0.096 0.857 0.026 0 0] weak)
 
 ; How many IBM-manufactured supercomputers will make the top 10 of the June 2014 TOP500 world's fastest supercomputer rankings?
-(o 11 '[0 5 5 0] (/ weak 4))
+;(o 11 '[0 5 0 0])
 
 ; Will Hewlett-Packard comprise at least 40% of the Vendors' System Share on the Top500 Supercomputers List compiled in June 2014?
-(o 15 (yes 50) 0.05)
+;(o 15 (yes 0) 0.05)
 
 ; When will 99% of the top 1 million web domains in the world be immune to Heartbleed? (538)
 ;(o 538 '[0.000 0.000 0.01 0.02 0.03 0.95] 0.025)
@@ -481,7 +548,7 @@
 (o 712 '[1 2 3 4 5 6])
 
 ; When will a prickless glucose monitor be commercially available to consumers?
-(o 709 '[5 6 6 7 7 4])
+(o 709 '[6 7 7 8 7 4])
 
 ; Will a new clean & jerk world record be set before or during the 2016 Olympic Games?
 (o 711 (yes 25) weak)
@@ -496,10 +563,10 @@
 (o 385 (yes 50) weak)
 
 ; Will a hurricane or tropical storm form in the Atlantic-Caribbean-Gulf of Mexico region in June 2014?
-(o 408 (yes 28.4) weak)
+(o 408 (yes 9.7) weak)
 
 ; Will the USPTO issue more than 750 nanotechnology class 977 patents in the first six months of 2014 (1/1/14-6/30/14)?
-(o 185 (yes 2) weak)
+(o 185 (yes 0.75) weak)
 
 ; Will obesity be among the top five health-related keyword searches in Google in any month in 2014?
 (o 188 (yes 3) weak)
@@ -547,10 +614,10 @@
 (o 726 '[2 1 2] weak)
 
 ; MH370 search days
-(o 727 '[1 1] 0.2)
+(o 727 (linear-scale 300 #:lo 0 #:hi 400) weak)
 
 ; MH370 search contract
-(o 728 '[1 1] 0.1)
+(o 728 (linear-scale 142 #:lo 25 #:hi 275) 0.1)
 
 ; When will the traversal conjecture be proven?
 (o 29 '[1 2 3 4 5])
@@ -560,3 +627,72 @@
 
 ; Will cyber threats be more costly than physical threats to the U.S. national electric grid in 2014? 
 (o 588 '[1 1] weak)
+
+; Will a genetically engineered organism that can break down grass plant materials to yield directly useful biofuel products, such as alcohols and alkanes, be reported before the end of 2015? 
+(o 206 (yes 20) weak)
+
+; june 2014 top500 #1 to exceed 50 million gflops/s
+;(o 16 (yes 0) weak)
+
+; What will the hashrate of the Bitcoin blockchain be on September 30, 2014?
+(o 325 '[0 0 0 1 9])
+
+; When will a piloted solar plane fly around the world only on solar energy?
+(o 721 '[1 2 2 2 2 2 2] 0.1)
+
+; Will any government officially accept a digital currency for circulation in their country in 2014?
+(o 103 (yes 5))
+
+; Which private company will be the first to shuttle an astronaut to the International Space Station? 
+(o 133 '[1 1 30 1 33])
+
+; Will the Indian Space Research Organization's Mangalyaan probe achieve orbital insertion around Mars before NASA's MAVEN spacecraft in September 2014?
+(o 153 (yes 18))
+
+; When will an article describing the observation of a Population III star be published in a journal indexed by Thomson Reuter’s Web of Science? 
+(o 170 '[1 2 4 8 32])
+
+; Which organization will be the first to observe a Population III star?
+(o 171 '[1 1 1 1 1 1 6])
+
+; How many teams will be awarded a full prize in the final round of the Qualcomm Tricorder X Prize competition?
+(o 184 '[37.08 37.85 18.24 6.83])
+
+; Will the clinical trial being carried out at Penn State University into selenium supplements for men at risk for prostate cancer show that the mineral has a protective effect?
+(o 207 (yes 5))
+
+; When will a supersonic aircraft be available again for commercial travel?
+(o 320 '[21 8 7 6 5])
+
+; When will the Bitcoin blockchain first register over 150,000 transactions in a single day?
+(o 337 '[.1 1 10 100 1000])
+
+; When will the Rosetta's small robotic lander, Philae, land successfully on the surface of a comet?
+(o 349 '[0.1 0.2 10 9 8 7 6 12])
+
+; Will US wind energy consumption decrease in 2014? 
+(o 359 (yes 10))
+
+; Will the consumer version of Google Glass be available for purchase in the US before the end of September 2014?
+(o 398 (yes 10))
+
+; Will Facebook use drones<E2><80><94>perhaps high-altitude, solar-powered craft like those made by Titan Aerospace<E2><80><94> to provide internet access in places where it is not currently accessible, by the end of December 2017?
+(o 531 (yes 10))
+
+; Will Google or Facebook first debut internet connectivity to consumers using solar-powered drones? 
+(o 557 '[10 1 10])
+
+; Will a VC-funded Bitcoin business declare bankruptcy by December 31, 2014?
+(o 624 (yes 55) weak)
+
+; Will the FAA announce permission for commercial drones to fly in US airspace before the end of 2015?
+(o 648 (yes 75) weak)
+
+; How many threatened languages will the Ethnologue language catalog report in its 18th edition?
+(o 663 '[1 5 30 50 30])
+
+; When will the Bailiwick of Jersey have over 50 companies that accept Bitcoin as a form of payment?
+(o 729 '[4 5 5 6])
+
+; When will the Australian Government award the contract for RFT for provision for services relating to the search for MH370?
+(o 730 '[10 9 8 7 6 5 4 3])
