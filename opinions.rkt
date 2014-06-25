@@ -208,7 +208,7 @@
    (varying-strength "2014-09-01" "2015-09-06"))
 
 ; Will Google announce development of a smartwatch at or before the Google I/O 2014 Conference?
-(o 672 (yes 60) weak)
+;(o 672 (yes 1) weak)
 
 ; Will there be at least one female winner of a Fields Medal in 2014?
 (o 462 (yes 20) 0.1)
@@ -237,7 +237,7 @@
 (o 659 (yes 33.333) weak)
 
 ; Will the International Sun-Earth Explorer 3 be successfully commanded to fire its thrusters by researchers?
-(o 643 (yes 76))
+(o 643 (yes 90))
 
 ; Will the International Sun-Earth Explorer 3 start to collect data and send it to Earth?
 (o 644 (yes 64) weak)
@@ -368,7 +368,7 @@
 (o 686 (yes 55) (varying-strength "2014-06-01" "2014-12-01"))
 
 ; At its first launch, will Apple's iWatch include a sensor to measure blood glucose level non-invasively?
-(o 687 (no 85))
+(o 687 (no 86))
 
 ; Will Google's glucose monitoring "smart" contact lenses get FDA approval by the end of 2016?
 (o 688 (no 49) (varying-strength "2014-07-01" "2015-07-01"))
@@ -512,10 +512,13 @@
 (o 226 (yes 63.1) weak)
 
 ; Will Google announce development of an Android Silver class of devices at or before the Google I/O 2014 Conference?
-(o 700 (yes 33) 0.05)
+;(o 700 (yes 0.1) 0.05)
 
 ; Will Google announce development of an Android In-Car System at or before the Google I/O 2014 Conference?
-(o 698 (yes 55) 0.05)
+(o 698 (yes 100) 0.05)
+
+; android tv?
+;(o 699 (yes 100))
 
 ; Will the average temperature for the contiguous U.S. during July 2014 be above 75oF?
 (o 373 (yes 12) weak)
@@ -555,6 +558,9 @@
 
 ; Will Huawei confirm allegations that "back doors" where installed on their computer hardware before being sold?
 (o 623 (yes 10) 0.1)
+
+; Will a solar-powered plane circumnavigate Earth before the end of 2015?
+(o 629 (yes 33) weak)
 
 ; Will Google incorporate infrared vision into future Google Glass models by the end of 2017?
 (o 535 (yes 49) weak)
@@ -635,7 +641,7 @@
 ;(o 16 (yes 0) weak)
 
 ; What will the hashrate of the Bitcoin blockchain be on September 30, 2014?
-(o 325 '[0 0 0 1 9])
+(o 325 '[0 0 0 1 99])
 
 ; When will a piloted solar plane fly around the world only on solar energy?
 (o 721 '[1 2 2 2 2 2 2] 0.1)
@@ -695,4 +701,16 @@
 (o 729 '[4 5 5 6])
 
 ; When will the Australian Government award the contract for RFT for provision for services relating to the search for MH370?
-(o 730 '[10 9 8 7 6 5 4 3])
+(o 730
+   (map * 
+        '[7   7   5   7   7   6   6   14   ]
+        '[ .95 .85 .75 .65 .55 .45 .35  .25]))
+
+; At its initial launch, will the range of Tesla's Gen 3 electric car be greater than 150 miles? 
+(o 731 (yes 60))
+
+; In June 2014, Amazon unveiled the "Fire", the world's first 3-D smartphone. Which of these companies will be next to release a 3-D smartphone? 
+(o 732 '[100 199 201])
+
+; Will a Phase 1 clinical trial start recruiting participants before the end of 2014 for a study of the treatment of autism using suramin, a century-old treatment for sleeping sickness?
+(o 733 (yes 50) weak)
