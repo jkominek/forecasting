@@ -5,7 +5,7 @@
          json
 	 (planet bzlib/date/plt)
 	 (file "/home/jkominek/forecasting/questions.rkt")
-	 (only-in (file "/home/jkominek/forecasting/utils.rkt") lmsr-outcomes))
+	 (only-in (file "/home/jkominek/forecasting/utils.rkt") lmsr-outcomes first-value))
 
 (define cookie-header (make-parameter #f))
 
@@ -63,17 +63,16 @@
   (define dimension
     (if (= (length old) 2)
 	1
-	(let-values
-	    ([(dim diff)
-	      (for/fold ([dim 0]
-			 [diff (abs (- (car old) (car new)))])
-			([o (cdr old)]
-			 [n (cdr new)]
-			 [idx (in-naturals)])
-			(if (> (abs (- o n)) diff)
-			    (values idx (abs (- o n)))
-			    (values dim diff)))])
-	  (add1 dim))))
+        (add1
+         (first-value
+          (for/fold ([dim 0]
+                     [diff (abs (- (car old) (car new)))])
+                    ([o (cdr old)]
+                     [n (cdr new)]
+                     [idx (in-naturals)])
+                    (if (> (abs (- o n)) diff)
+                        (values idx (abs (- o n)))
+                        (values dim diff)))))))
 
   (define new-value-str (string-join (map n->s new) "%2C"))
   (define old-value-str (string-join (map n->s old) "%2C"))

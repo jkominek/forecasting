@@ -7,9 +7,17 @@
 	 net/url
 	 racket/port
 	 racket/string
-	 file/gunzip)
+	 file/gunzip
+         syntax/parse/define)
 
 (provide cat)
+
+(define-simple-macro (first-value body:expr)
+  (call-with-values
+   (lambda () body)
+   (lambda x (car x))))
+
+(provide first-value)
 
 ; Takes a list of relative likelihoods, and normalizes
 ; them all into probabilities.
@@ -109,7 +117,7 @@
 	    (close-output-port out)))
   in)
 
-(define (open-url/cache-to-file url path #:max-age [max-age 1200])
+(define (open-url/cache-to-file url path #:max-age [max-age 1800])
   (let ([last-modification
 	 (file-or-directory-modify-seconds path #f (lambda () 0))])
     (when (> (- (current-seconds) last-modification) max-age)

@@ -216,7 +216,7 @@
         (sleep 60)
         (start-monitoring))
       (begin
-        (sleep (+ 60 (* delay-chunk 1/4) (random (* 3/4 delay-chunk))))
+        (sleep (+ 60 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk)))))
         (start-monitoring (+ 60 delay-chunk))))
   )
 
@@ -267,6 +267,7 @@
     (let/ec continue
       (define from-channel
 	(sync/timeout 0.5 ready-trades))
+
       (unless from-channel
 	; nothing showed up, are we out of work?
 	(define live-count
@@ -289,8 +290,7 @@
 
       (define summary-details (make-hash))
       (printf "   considering ~a shift to ~a~n" q-id
-	      (map (lambda (x) (exact-round (* 100 x)))
-		   (last trade-sequence)))
+              (pretty-probability-list (last trade-sequence)))
 
       (flush-output)
 
@@ -306,30 +306,48 @@
 	 #:beliefs (opinion-beliefs opinion)
 	 ))
 
+      ; The next three blocks check to see if the proposed trade is high
+      ; enough quality to be worth proposing to the user / executing.
+      ; First step, define all the checks that are always available to us.
       (define potential-improvements
-        `((credit .
-            ,(> (hash-ref summary-details 'credit) 2.0))
-          (current-score .
-            ,(> (hash-ref summary-details 'current-score-improvement)
-                (max 10.0
-                     (* 1/10 (hash-ref summary-details 'initial-current-score)))))
-          (total-assets .
-            ,(> (hash-ref summary-details 'total-Δassets) 25))
-          (final-score .
-            ,(if (hash-has-key? summary-details 'final-score-improvement)
-                 (or (and (< (hash-ref summary-details 'initial-final-score) 10.0)
-                          (> (hash-ref summary-details 'final-score-improvement) 1.0))
-                     (and (>= (hash-ref summary-details 'initial-final-score) 10.0)
-                          (> (hash-ref summary-details 'final-score-improvement)
-                             (* 1/10 (hash-ref summary-details 'initial-final-score)))))
-                 #f))
+        `((credit
+           ,(hash-ref summary-details 'credit) 2.0)
+          (current-score
+           ,(hash-ref summary-details 'current-score-improvement)
+           ,(max 10.0
+                 (* 1/10 (hash-ref summary-details 'initial-current-score))))
+          (total-assets
+           ,(hash-ref summary-details 'total-Δassets) 25)
           ))
 
-      (unless (for/fold ([something-improved? #f])
-                        ([thing potential-improvements])
-                        (or something-improved? (cdr thing)))
+      ; Next, if we have specific beliefs about this one, we've got some
+      ; more checks we can do to see if the trade is worthwhile
+      (when (hash-has-key? summary-details 'final-score-improvement)
+        (set! potential-improvements
+              (cons
+               `(final-score
+                 ,(hash-ref summary-details 'final-score-improvement)
+                 ,(max 1.0
+                       (* 1/10 (hash-ref summary-details 'initial-final-score))))
+               potential-improvements)))
+
+      ; Finally
+      (unless
+       ; Look to see if any of the attributes are sufficient
+       (for/fold ([sufficient-improvement? #f])
+                 ([thing potential-improvements])
+          (match-let ([(list identifier value target)
+                       thing])
+            (if (or (>= value target) sufficient-improvement?)
+                #t
+                (begin
+                  ; complain about the ones that aren't
+                  (printf "     ~a was ~a, missing ~a~n" identifier (cat value 1 2.) (cat target 1 2. 'inexact))
+                  sufficient-improvement?))))
+        ; bail out of this loop if we didn't find anything to justify the trade
         (continue (void)))
 
+      ; display the details on the trade
       (printf "(~a) ~a~n~ https://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
 	      (question-id q)
 	      (question-name q)
@@ -339,15 +357,16 @@
       (unless (web-trades)
 	(continue (void)))
 
-      ; before prompting the user, read any crap
-      ; still in the current-input buffers, so we
-      ; can't be confused about which trade they
-      ; want us to execute
-      (eat-up-everything)
-
       (unless #t ;(= 728 q-id)
+        ; before prompting the user, read any crap
+        ; still in the current-input buffers, so we
+        ; can't be confused about which trade they
+        ; want us to execute
+        (eat-up-everything)
+
 	(printf "execute trade? ")
 	(unless (regexp-match #rx"^y" (read-line))
+          ; anything starting with 'y' is good
 	  (continue (void))))
 
       (unless (have-session?)
@@ -357,12 +376,15 @@
 	     (make-trade q-id (question-probability q)
 			 (last trade-sequence))])
 	(if trade
+            ; got a good response back, trade successful
 	    (begin
 	      (printf "trade successful~n")
 	      (printf "standings were@ ~a" (hash-ref standings q-id))
+              ; update our memory of our current asset standings
 	      (update-standings q-id (trade-assets trade))
 	      (printf " now@ ~a~n" (hash-ref standings q-id))
 	      )
+            ; didn't get a good response, assume the trade failed
 	    (printf "failed to make trade~n")))
       ))) ; for, let/ec
 

@@ -20,7 +20,7 @@
 	      q-rec))))
 
 (define/contract
-  (load-question-database-url/cache-to-file url path #:max-age [max-age 1200])
+  (load-question-database-url/cache-to-file url path #:max-age [max-age 1800])
   (->* (string? path-string?) (#:max-age natural-number/c) question-database/c)
   (load-question-database
     (open-url/cache-to-file url path #:max-age max-age)))
@@ -275,7 +275,7 @@
   (if (hash-has-key? (trade-database) user-id)
       (hash-ref (trade-database) user-id)
       (let* ([utpath (build-path "ut" (number->string user-id))]
-	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age 1200))])
+	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age 1800))])
 	(hash-set! (trade-database) user-id v)
 	v)))
 
