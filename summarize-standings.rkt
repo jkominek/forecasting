@@ -7,7 +7,9 @@
          (planet bzlib/date/plt)
 	 )
 
-(question-database (load-question-database-url/cache-to-file *standard-question-list-url* "data.json"))
+(question-database
+  (load-question-database-url/cache-to-file *standard-question-list-url* "data.json"
+                                            #:max-age 10800))
 
 (define q-id
   (command-line
