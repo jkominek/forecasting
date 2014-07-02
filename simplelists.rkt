@@ -1,7 +1,12 @@
 #lang racket
 
-(require "questions.rkt"
-	 (planet bzlib/date/plt))
+(require (file "/home/jkominek/forecasting/questions.rkt")
+         (file "/home/jkominek/forecasting/utils.rkt")
+	 (planet bzlib/date/plt)
+         math/flonum)
+
+(question-database
+ (load-question-database-url/cache-to-file  *standard-question-list-url* "data.json"))
 
 (define viable-questions
   (filter (lambda (q)
@@ -37,17 +42,15 @@
 (for ([q meaningful-volume-questions])
   (define mean (/ 1.0 (length (question-probability q))))
   (define stddev
-    (sqrt (apply + (map (lambda (x) (expt (- x mean) 2))
-			(question-probability q)))))
+    (sqrt (flsum (map (lambda (x) (expt (- x mean) 2))
+                      (question-probability q)))))
   (when (< stddev 0.07)
     (printf "(~a) id ~a \"~a\"~n    ~a ** ~a~n"
 	    (question-trade-count q)
 	    (question-id q)
 	    (question-name q)
 	    stddev
-	    (string-join
-	     (map number->string (question-probability q))
-	     ", "))))
+            (pretty-probability-list (question-probability q)))))
 
 (printf "~n************ UNSWUNG QUESTIONS~n")
 
@@ -59,7 +62,5 @@
 	    (question-id q)
 	    (question-name q)
 	    highest
-	    (string-join
-	     (map number->string (question-probability q))
-	     ", "))))
+            (pretty-probability-list (question-probability q)))))
 
