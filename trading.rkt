@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require math
+         math/flonum
          racket/contract
          racket/sequence
          racket/string
@@ -14,9 +15,9 @@
 
 (define (cost->weight cost)
   (cond
-    [(< cost 0) (+ 1 (abs cost))]
-    [(< cost 1) 1]
-    [else 1]))
+    [(fl< cost 0.0) (fl+ 1.0 (flabs cost))]
+    [(fl< cost 1.0) 1.0]
+    [else 1.0]))
 
 ; We can't just through a full strength functionminimizer at
 ; this because we're very specifically constrained by the user
@@ -54,7 +55,8 @@
       (if (and (not (void? v))
                (> v maximized-value))
           (values shifted-probabilities v)
-          (values new-probabilities maximized-value)))))
+          (values new-probabilities maximized-value)))
+    ))
 
 (define (utility-function
          #:beliefs beliefs
@@ -66,11 +68,13 @@
   (define initial-debt (apply min initial-assets))
   ; this is how much we expect to earn (probabilistically)
   ; upon question resolution, initially
-  (define initial-expected-earnings (apply + (map * beliefs initial-assets))) 
+  (unless (= (length beliefs) (length initial-assets))
+    (printf "beliefs ~a mismatch assets ~a!~n" beliefs initial-assets))
+  (define initial-expected-earnings (flsum (map fl* beliefs initial-assets))) 
 
   (lambda (new-probabilities #:initial [initial #f])
     (let* ([asset-change (lmsr-outcomes initial-probabilities new-probabilities)]
-           [new-assets (map + initial-assets asset-change)]
+           [new-assets (map fl+ initial-assets asset-change)]
            ; this is the amount the market will hold onto until
            ; resolution if we make this trade
            [new-debt (apply min new-assets)]
@@ -80,7 +84,7 @@
            ; this is how much we expect to earn (probabilistically)
            ; upon question resolution, if we make this trade
            [new-expected-earnings
-            (apply + (map * beliefs new-assets))]
+            (flsum (map * beliefs new-assets))]
            ; change in expected earnings
            [expected-earnings-improvement
             (- new-expected-earnings initial-expected-earnings)])
@@ -99,13 +103,13 @@
 	  (if (>= new-debt (/ debt-limit 10))
 	      ; anything under 10% of our debt limit
 	      ; isn't worth penalizing the earnings for
-	      (list 1
+	      (list 1.0
 		    (* new-expected-earnings
 		       (log (if (< new-debt 1.0)
 				1.0
 				new-debt))))
 	      ; but over that, we need to scale them
-	      (list 0
+	      (list 0.0
 		    (/ new-expected-earnings
 		       (abs new-debt))))
           
@@ -122,7 +126,7 @@
   (define initial-debt (apply min initial-assets))
   ; this is how much we expect to earn (probabilistically)
   ; upon question resolution, initially
-  (define initial-expected-earnings (apply + (map * beliefs initial-assets))) 
+  (define initial-expected-earnings (flsum (map * beliefs initial-assets))) 
 
   (lambda (new-probabilities #:initial [initial #f])
     (let* ([asset-change (lmsr-outcomes initial-probabilities new-probabilities)]
@@ -133,7 +137,7 @@
            ; this is how much we expect to earn (probabilistically)
            ; upon question resolution, if we make this trade
            [new-expected-earnings
-            (apply + (map * beliefs new-assets))]
+            (flsum (map * beliefs new-assets))]
            ; change in expected earnings
            [expected-earnings-improvement
             (- new-expected-earnings initial-expected-earnings)])
@@ -171,7 +175,7 @@
     (define initial-debt (apply min initial-assets))
     ; this is how much we expect to earn (probabilistically)
     ; upon question resolution, initially
-    (define initial-expected-earnings (apply + (map * beliefs initial-assets))) 
+    (define initial-expected-earnings (flsum (map * beliefs initial-assets))) 
     
     (lambda (new-probabilities #:initial [initial #f])
       (let* ([asset-change (lmsr-outcomes initial-probabilities new-probabilities)]
@@ -185,7 +189,7 @@
              ; this is how much we expect to earn (probabilistically)
              ; upon question resolution, if we make this trade
              [new-expected-earnings
-              (apply + (map * beliefs new-assets))]
+              (flsum (map * beliefs new-assets))]
              ; change in expected earnings
 	     [expected-earnings-improvement
               (- new-expected-earnings initial-expected-earnings)])
@@ -195,12 +199,12 @@
 		initial)
             (cond
               [(equal? attribute 'curr-score)
-               (- (apply + (map * new-assets new-probabilities))
-                  (apply + (map * initial-assets initial-probabilities)))]
+               (- (flsum (map * new-assets new-probabilities))
+                  (flsum (map * initial-assets initial-probabilities)))]
               [(equal? attribute 'final-score)
                expected-earnings-improvement]
               [(equal? attribute 'final+assetinc)
-               (if (> (apply + asset-change) 0)
+               (if (> (flsum asset-change) 0)
                    expected-earnings-improvement
                    -1000)]
               [(equal? attribute 'credit)
@@ -213,9 +217,10 @@
                       (+ 1.0 (abs new-debt))
                       1.0))]
               [(equal? attribute 'total-positive-assets)
-               (for/fold ([sum 0.0]) ([asset new-assets]) (+ sum (if (> asset 0.0) asset 0)))]
+               (for/fold ([sum 0.0]) ([asset new-assets])
+                         (+ sum (if (> asset 0.0) asset 0)))]
               [(equal? attribute 'total-assets)
-               (apply + new-assets)]
+               (flsum new-assets)]
               [else (error "unknown attribute" attribute)])
             (void)
             )))))
@@ -225,9 +230,9 @@
     (for ([a as]
 	  [b bs])
       (cond
-       [(> a b) (done #t)]
-       [(< (abs (- a b)) 1e-10) (void)]
-       [(< a b) (done #f)]))
+       [(fl> a b) (done #t)]
+       [(fl< (flabs (fl- a b)) 1e-10) (void)]
+       [(fl< a b) (done #f)]))
     #f))
 
 (define (find-optimal-trade
@@ -261,10 +266,11 @@
   (let/ec done
     (when (= trade-limit 0)
       (done '()))
-    (define next-trade (find-optimal-trade utility-function comparison-function
-                                           #:assets initial-assets #:beliefs beliefs
-                                           #:initial-probabilities initial-probabilities
-                                           #:debt-limit debt-limit))
+    (define next-trade
+      (find-optimal-trade utility-function comparison-function
+                          #:assets initial-assets #:beliefs beliefs
+                          #:initial-probabilities initial-probabilities
+                          #:debt-limit debt-limit))
     ;(printf "~a~n" next-trade)
     (define max-difference
       (for/fold ([diff 0])
@@ -289,7 +295,7 @@
     (if (< (abs (- (/ (exact-round (* p 100)) 100) p)) 1e-14)
 	0
 	(if (null? (cdr ps))
-	    (error "couldn't find the choice")
+            0 ;(error "couldn't find the choice")
 	    (add1 (determine-choice (cdr ps)))))))
 
 (define/contract
@@ -329,10 +335,10 @@
   ;(hash-set! sh 'initial-probabilities initial-probabilities)
   ;(hash-set! sh 'initial-assets initial-assets)
   (hash-set! sh 'credit credit)
-  (hash-set! sh 'total-Δassets  (apply + (map - (last assets-per-trade) initial-assets)))
+  (hash-set! sh 'total-Δassets  (flsum (map - (last assets-per-trade) initial-assets)))
 
-  (define initial-current-score (apply + (map * initial-assets initial-probabilities)))
-  (define new-current-score (apply + (map * (last assets-per-trade) (last new-probabilities-list))))
+  (define initial-current-score (flsum (map * initial-assets initial-probabilities)))
+  (define new-current-score (flsum (map * (last assets-per-trade) (last new-probabilities-list))))
 
   (hash-set! sh 'initial-current-score initial-current-score)
   (hash-set! sh 'new-current-score new-current-score)
@@ -380,10 +386,10 @@
              " "
              (cat (- (apply min new-assets) (apply min old-assets)) 5 -1.)
              " "
-             (cat (- (apply + (map * to new-assets)) (apply + (map * from old-assets))) 5 -1.)
+             (cat (- (flsum (map * to new-assets)) (flsum (map * from old-assets))) 5 -1.)
              " "
              (if beliefs
-                 (cat (- (apply + (map * beliefs new-assets)) (apply + (map * beliefs old-assets))) 5 -1.)
+                 (cat (- (flsum (map * beliefs new-assets)) (flsum (map * beliefs old-assets))) 5 -1.)
                  "")
              "\n")
        ""))
@@ -392,7 +398,7 @@
     "\n"
     (cat "Δ assets:" 15)
     (pretty-asset-list (map - (last assets-per-trade) initial-assets))
-    (cat (exact-round (apply + (map - (last assets-per-trade) initial-assets))) 6)
+    (cat (exact-round (flsum (map - (last assets-per-trade) initial-assets))) 6)
     "\n"
     (cat "final assets:" 15)
     (pretty-asset-list (last assets-per-trade))
@@ -405,8 +411,8 @@
     (cat (- new-current-score initial-current-score) 8 -2.)
     "\n"
     (if beliefs
-        (let* ([initial-final-score (apply + (map * initial-assets beliefs))]
-               [new-final-score (apply + (map * (last assets-per-trade) beliefs))])
+        (let* ([initial-final-score (flsum (map * initial-assets beliefs))]
+               [new-final-score (flsum (map * (last assets-per-trade) beliefs))])
 	  (hash-set! sh 'initial-final-score initial-final-score)
 	  (hash-set! sh 'new-final-score new-final-score)
 	  (hash-set! sh 'final-score-improvement (- new-final-score initial-final-score))

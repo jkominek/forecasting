@@ -165,7 +165,7 @@
 	    #:minimum-change 1/4
 	    #:beliefs (opinion-beliefs opinion)
 	    #:initial-probabilities (question-probability q)
-	    #:trade-limit 5
+	    #:trade-limit 8
 	    ))
 
 	 (when (> (length trade-sequence) 0)
@@ -216,7 +216,9 @@
         (sleep 60)
         (start-monitoring))
       (begin
-        (sleep (+ 60 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk)))))
+        (sleep
+         (min 1800
+          (+ 60 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk))))))
         (start-monitoring (+ 60 delay-chunk))))
   )
 
@@ -311,13 +313,13 @@
       ; First step, define all the checks that are always available to us.
       (define potential-improvements
         `((credit
-           ,(hash-ref summary-details 'credit) 2.0)
+           ,(hash-ref summary-details 'credit) 1.0)
           (current-score
            ,(hash-ref summary-details 'current-score-improvement)
            ,(max 10.0
                  (* 1/10 (hash-ref summary-details 'initial-current-score))))
           (total-assets
-           ,(hash-ref summary-details 'total-Δassets) 25)
+           ,(hash-ref summary-details 'total-Δassets) 20)
           ))
 
       ; Next, if we have specific beliefs about this one, we've got some
@@ -328,13 +330,13 @@
                `(final-score
                  ,(hash-ref summary-details 'final-score-improvement)
                  ,(max 1.0
-                       (* 1/10 (hash-ref summary-details 'initial-final-score))))
+                       #;(* 1/10 (hash-ref summary-details 'initial-final-score))))
                potential-improvements)))
 
       ; Finally
       (unless
        ; Look to see if any of the attributes are sufficient
-       (for/fold ([sufficient-improvement? #f])
+       (for/fold ([sufficient-improvement? (ramifications)])
                  ([thing potential-improvements])
           (match-let ([(list identifier value target)
                        thing])
@@ -342,7 +344,8 @@
                 #t
                 (begin
                   ; complain about the ones that aren't
-                  (printf "     ~a was ~a, missing ~a~n" identifier (cat value 1 2.) (cat target 1 2. 'inexact))
+                  (when (>= value (/ target 2))
+                    (printf "     ~a was ~a, missing ~a~n" identifier (cat value 1 2.) (cat target 1 2. 'inexact)))
                   sufficient-improvement?))))
         ; bail out of this loop if we didn't find anything to justify the trade
         (continue (void)))
@@ -379,10 +382,12 @@
             ; got a good response back, trade successful
 	    (begin
 	      (printf "trade successful~n")
-	      (printf "standings were@ ~a" (hash-ref standings q-id))
+	      (printf "standings were@ ~a"
+                      (pretty-asset-list (hash-ref standings q-id)))
               ; update our memory of our current asset standings
 	      (update-standings q-id (trade-assets trade))
-	      (printf " now@ ~a~n" (hash-ref standings q-id))
+	      (printf " now@ ~a~n"
+                      (pretty-asset-list (hash-ref standings q-id)))
 	      )
             ; didn't get a good response, assume the trade failed
 	    (printf "failed to make trade~n")))
