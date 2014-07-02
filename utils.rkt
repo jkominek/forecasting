@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require math
+         math/flonum
 	 (planet bzlib/date/plt)
 	 racket/contract
 	 (only-in srfi/54 cat)
@@ -25,8 +26,9 @@
   (normalize-probabilities l)
   (-> (listof (>=/c 0)) (listof (real-in 0 1)))
 
-  (let ([sum (apply + l)])
-    (map (lambda (x) (/ x sum)) l)))
+  (let* ([l (map exact->inexact l)]
+         [sum (flsum l)])
+    (map (lambda (x) (fl/ x sum)) l)))
 
 (define distant-future (seconds->date 2524608000))
 ; Given a time, compute the number of points we're willing to
@@ -39,17 +41,20 @@
 
   (if settled-at
       (let ([days-remaining
-	     (date- settled-at (seconds->date (current-seconds)))])
-	(if (< days-remaining 0)
+	     (exact->inexact
+              (date- settled-at (seconds->date (current-seconds))))])
+	(if (< days-remaining 0.0)
 	    0.0
-	    (let ([v (* 1.5 1010.81 (exp (* -0.0107473 days-remaining)))])
-	      (- (cond
-		  [(> v 1000.0) 1000.0]
-		  [(< v 7.5) 7.5]
-		  [else v])))))
+	    (let ([v (fl* (fl* 1.5 1010.81)
+                          (flexp (fl* -0.0107473 days-remaining)))])
+	      (fl- 0.0
+                   (cond
+                    [(fl> v 1000.0) 1000.0]
+                    [(fl< v    7.5)    7.5]
+                    [else v])))))
       -1.0))
 
-(define log2 (log 2))
+(define log2 (fllog 2.0))
 ; Robin Hanson's LMSR formula, but with the probability
 ; division done in log-space, so things don't go horribly
 ; wrong.
@@ -57,9 +62,9 @@
   (lmsr-outcome start stop)
   (-> (real-in 0.0 1.0) (real-in 0.0 1.0) real?)
   
-  (* -100.0
-     (- (/ (log start) log2)
-        (/ (log stop) log2))))
+  (fl* -100.0
+       (fl- (fl/ (fllog start) log2)
+            (fl/ (fllog stop) log2))))
 
 ; Applies the LMSR to a list of old probabilities and new
 ; ones, providing the per-choice cost as a list.
@@ -80,20 +85,21 @@
 
   (define leftover (- (list-ref probabilities choice) new-value))
   (define sum-of-unspecified-probabilies
-    (for/fold ([sum 0.0])
-	      ([p probabilities]
-	       [i (in-naturals)])
-	      (if (= i choice)
-		  sum
-		  (+ sum p))))
-  (define l/s (/ leftover sum-of-unspecified-probabilies))
+    (flsum
+     (for/fold ([l '()])
+               ([p probabilities]
+                [i (in-naturals)])
+               (if (= i choice)
+                   l
+                   (cons p l)))))
+  (define l/s (fl/ leftover sum-of-unspecified-probabilies))
 
   (for/list ([p probabilities]
              [i (in-naturals)])
     (if (= i choice)
         new-value
-        (if (> sum-of-unspecified-probabilies 0.0)
-            (+ p (* l/s p))
+        (if (fl> sum-of-unspecified-probabilies 0.0)
+            (fl+ p (fl* l/s p))
             0.0))))
 
 (define rate-limiter (make-channel))
