@@ -47,8 +47,9 @@
   (string-trim #:left? #f #:repeat? #t (real->decimal-string v 20) "0"))
 
 (define/contract
-  (make-trade q-id old new #:max-cost [max-cost #f] #:hc [hc (get-connection)])
+  (make-trade q-id ordered? old new #:max-cost [max-cost #f] #:hc [hc (get-connection)])
   (->* (natural-number/c
+        boolean?
 	(non-empty-listof (real-in 0.0 1.0))
 	(non-empty-listof (real-in 0.0 1.0)))
        (#:hc http-conn?
@@ -63,7 +64,7 @@
   (define dimension
     (if (= (length old) 2)
 	1
-        (add1
+        (+ (if ordered? 1 1)
          (first-value
           (for/fold ([dim 0]
                      [diff (abs (- (car old) (car new)))])
@@ -93,7 +94,9 @@
   (let ([json (read-json body-port)])
     (if (hash-has-key? json 'trade)
 	(hash-ref json 'trade)
-	#f))
+        (begin
+          (write-json json (open-output-file "/tmp/exectrades.log" #:exists 'append))
+          #f)))
   )
 
 (define/contract
@@ -103,7 +106,7 @@
        (hash/c natural-number/c jsexpr?))
   (define-values
     (status-line headers body-port)
-    (http-conn-sendrecv! hc "/users/relevant_activities"
+    (http-conn-sendrecv! hc "/users/relevant_activities?group_by=question"
                          #:method "GET"
                          #:content-decode '()
                          #:headers (list "Accept: application/json"
@@ -111,20 +114,23 @@
 
   ;(printf "~a~n~a~n" status-line headers)
 
-  (define trades (hash-ref (read-json body-port) 'trades))
-
   (define latest (make-hash))
 
-  (for ([trade trades])
-    ;(printf "~a~n" (hash-keys trade))
-    (define q-id (hash-ref trade 'question_id))
-    (if (hash-has-key? latest q-id)
-	(when (date<? (trade-created-at (hash-ref latest q-id))
-		      (trade-created-at trade))
-	  (hash-set! latest q-id trade))
-	(hash-set! latest q-id trade))
-    )
+  (with-handlers
+   ([exn? (lambda (e) (printf "ACTIVITIES ERROR: ~a~n" e) latest)])
 
-  latest)
+   (define trades (hash-ref (read-json body-port) 'trades))
+
+   (for ([trade trades]
+         #:unless (> (length (trade-assumptions trade)) 0))
+        (define q-id (hash-ref trade 'question_id))
+        (if (hash-has-key? latest q-id)
+            (when (date<? (trade-created-at (hash-ref latest q-id))
+                          (trade-created-at trade))
+                  (hash-set! latest q-id trade))
+            (hash-set! latest q-id trade))
+        )
+
+   latest))
 
 (provide get-connection log-in make-trade fetch-latest-trades have-session?)

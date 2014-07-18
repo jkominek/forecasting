@@ -4,12 +4,20 @@
          math/flonum
 	 (planet bzlib/date/plt)
 	 racket/contract
-	 (only-in srfi/54 cat)
+	 (rename-in (only-in srfi/54 cat) [cat unsafe-cat])
 	 net/url
 	 racket/port
 	 racket/string
 	 file/gunzip
          syntax/parse/define)
+
+(define cat
+  (lambda x
+    (cond
+     [(not (real? (car x))) (apply unsafe-cat x)]
+     [(infinite? (car x)) (format "~a" (car x))]
+     [(nan? (car x)) (format "~a" (car x))]
+     [else (apply unsafe-cat x)])))
 
 (provide cat)
 
@@ -45,8 +53,8 @@
               (date- settled-at (seconds->date (current-seconds))))])
 	(if (< days-remaining 0.0)
 	    0.0
-	    (let ([v (fl* (fl* 1.5 1010.81)
-                          (flexp (fl* -0.0107473 days-remaining)))])
+	    (let ([v (fl* (fl* 0.666 1010.81)
+                          (flexp (fl* (fl* -0.0107473 1.0) days-remaining)))])
 	      (fl- 0.0
                    (cond
                     [(fl> v 1000.0) 1000.0]
@@ -76,31 +84,48 @@
   
   (map lmsr-outcome start stop))
 
+(define (index-list-lookup i idxs vals)
+  (if (= i (car idxs))
+      (car vals)
+      (index-list-lookup i (cdr idxs) (cdr vals))))
+
 (define/contract
-  (shift-choice-probability probabilities choice new-value)
+  (shift-choice-probability probabilities choice raw-new-values)
   (-> (listof (real-in 0.0 1.0))
-      natural-number/c
-      (real-in 0 1)
+      (listof natural-number/c)
+      (listof (real-in 0 1))
       (listof (real-in 0.0 1.0)))
 
-  (define leftover (- (list-ref probabilities choice) new-value))
+  (define new-value
+    (for/list ([i (in-range 0 (length probabilities))])
+      (if (member i choice)
+          (index-list-lookup i choice raw-new-values)
+          (void))))
+
+  (define leftover
+    (for/sum ([i (in-naturals)]
+              [p probabilities]
+              [n new-value]
+              #:when (member i choice))
+       (- p n)))
+
   (define sum-of-unspecified-probabilies
-    (flsum
-     (for/fold ([l '()])
-               ([p probabilities]
-                [i (in-naturals)])
-               (if (= i choice)
-                   l
-                   (cons p l)))))
+    (for/sum ([i (in-naturals)]
+              [p probabilities]
+              #:when (not (member i choice)))
+      p))
+
   (define l/s (fl/ leftover sum-of-unspecified-probabilies))
 
   (for/list ([p probabilities]
+             [n new-value]
              [i (in-naturals)])
-    (if (= i choice)
-        new-value
+    (if (member i choice)
+        n
         (if (fl> sum-of-unspecified-probabilies 0.0)
             (fl+ p (fl* l/s p))
-            0.0))))
+            0.0)))
+  )
 
 (define rate-limiter (make-channel))
 (void (thread
@@ -114,14 +139,15 @@
   (channel-get rate-limiter)
   (printf "fetching from network!~n")
 
-  (define p (get-pure-port (string->url url-string)
-			   '("Accept-encoding: gzip")))
-  (define-values (in out) (make-pipe))
-  (thread (lambda ()
-	    (gunzip-through-ports p out)
-	    (flush-output out)
-	    (close-output-port out)))
-  in)
+  (time
+   (define p (get-pure-port (string->url url-string)
+                            '("Accept-encoding: gzip")))
+   (define-values (in out) (make-pipe))
+   (thread (lambda ()
+             (gunzip-through-ports p out)
+             (flush-output out)
+             (close-output-port out)))
+   in))
 
 (define (open-url/cache-to-file url path #:max-age [max-age 1800])
   (let ([last-modification
@@ -144,9 +170,23 @@
 (define (pretty-probability-list l)
   (format "[~a ]" (string-join (map (lambda (v) (cat (* 100 v) 5 1. 'inexact)) l))))
 (define (pretty-asset-list l)
-  (format "[~a ]" (string-join (map (lambda (v) (cat (exact-round v) 5)) l))))
+  (format "[~a ]"
+	  (string-join
+	   (map (lambda (v)
+		  (if (rational? v)
+		      (cat (exact-round v) 5)
+		      (cat (format "~a" v) 5)))
+		l))
+	  ))
 (define (pretty-string-list l)
   (format "[~a ]" (string-join l)))
+
+(define (update-standings q-id assets #:standings standings)
+  (hash-update! standings q-id
+                (lambda (orig)
+                  (map + orig assets))
+                (lambda ()
+                  (build-list (length assets) (lambda x 0.0)))))
   
 (provide normalize-probabilities
 	 maximum-points-tied-up
@@ -158,4 +198,5 @@
 	 pretty-probability-list
 	 pretty-asset-list
 	 pretty-string-list
+         update-standings
 	 )

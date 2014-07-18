@@ -18,13 +18,13 @@
 
 (question-database
  (load-question-database-url/cache-to-file
-  *standard-question-list-url* "data.json"))
+  *standard-question-list-url* "data.json" #:max-age 10000))
 
 (define standings (make-hash))
 (define expected (make-hash))
 (define tied-up (make-hash))
 
-(for ([trade (fetch-user-trades (my-user-id))]
+(for ([trade (fetch-user-trades (my-user-id) #:max-age 10000)]
       #:when (have-question? (hash-ref trade 'question_id)))
   (define q-id (hash-ref trade 'question_id))
   (define q (fetch-question q-id))
@@ -47,7 +47,7 @@
   (define limit (maximum-points-tied-up (question-settlement-at q)))
 
   ;(when (have-opinion? q-id)
-  ;  (apply + (map * standing (opinion-beliefs (get-opinion q-id)))))
+  ;  (flsum (map * standing (opinion-beliefs (get-opinion q-id)))))
 
   (display
    (string-join

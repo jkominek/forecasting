@@ -66,16 +66,19 @@
    q-id))
 
 (define/contract
-  (fetch-full-question q-or-qid #:question-database [q-d (question-database)])
+  (fetch-full-question q-or-qid
+		       #:max-age [max-age 3600]
+		       #:question-database [q-d (question-database)])
   (->* ((or/c natural-number/c question/c))
-       (#:question-database question-database/c)
+       (#:max-age natural-number/c
+	#:question-database question-database/c)
        question/c)
 
   (let* ([qid (if (number? q-or-qid)
 		  q-or-qid
 		  (question-id q-or-qid))]
 	 [question (fetch-question qid)]
-	 [qpath (build-path "q" (number->string qid))]
+	 [qpath (build-path "/home/jkominek/forecasting/q" (number->string qid))]
 	 [current-date
 	  (if (file-exists? qpath)
 	      (question-updated-at
@@ -86,7 +89,7 @@
       (if (date<? current-date
 		  (question-updated-at question))
 	  ; oh noes full question is out of date
-	  (read-json (open-url/cache-to-file (question-url qid) qpath #:max-age 45))
+	  (read-json (open-url/cache-to-file (question-url qid) qpath #:max-age max-age))
 	  ; up to date, use what we've got
 	  (read-json (open-input-file qpath))))
     (for/fold ([start question])
@@ -166,6 +169,9 @@
 (define (question-visible? q)
   (hash-ref (hash-ref q 'question) 'is_visible))
 
+(define (question-ordered? q)
+  (hash-ref (hash-ref q 'question) 'is_ordered))
+
 (define (question-locked? q)
   (hash-ref (hash-ref q 'question) 'is_locked))
 
@@ -210,7 +216,7 @@
 	 question-challenge question-description question-visible?
 	 question-locked? question-choices question-choice
 	 question-trade-count question-comment-count question-trades
-         question-user-assets)
+         question-user-assets question-ordered?)
 
 (define (choice-name c)
   (hash-ref c 'name))
@@ -225,8 +231,16 @@
   
   (hash-ref t 'user))
 
+(define (trade-id t)
+  (hash-ref t 'id))
+
 (define (trade-question t)
   (hash-ref t 'question))
+
+(define (trade-assumptions t)
+  (if (hash-has-key? t 'assumptions)
+      (hash-ref t 'assumptions)
+      '()))
 
 (define (trade-created-at t)
   (read-iso8601 (hash-ref t 'created_at)))
@@ -246,7 +260,7 @@
   
   (hash-ref t 'assets_per_option))
 
-(provide trade-user trade-question trade-created-at trade-old-values trade-new-values trade-assets)
+(provide trade-id trade-user trade-question trade-assumptions trade-created-at trade-old-values trade-new-values trade-assets)
 
 (define/contract (user-name u)
   (-> jsexpr? string?)
@@ -269,13 +283,13 @@
   (format "https://scicast.org/trades/?user_id=~a&include_current_probs=False" user-id))
 
 (define/contract
-  (fetch-user-trades user-id)
-  (-> natural-number/c jsexpr?)
+  (fetch-user-trades user-id #:max-age [max-age 1800])
+  (->* (natural-number/c) (#:max-age natural-number/c) jsexpr?)
 
   (if (hash-has-key? (trade-database) user-id)
       (hash-ref (trade-database) user-id)
       (let* ([utpath (build-path "ut" (number->string user-id))]
-	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age 1800))])
+	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age max-age))])
 	(hash-set! (trade-database) user-id v)
 	v)))
 

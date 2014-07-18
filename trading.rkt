@@ -29,6 +29,7 @@
   (maximize-probability-adjustment
    #:probabilities initial-probabilities
    #:function f
+   #:search-step [search-step 1]
    #:comparison [> >])
    
   ; these are all the choices which we'll consider adjusting.
@@ -45,10 +46,12 @@
   (for*/fold ([new-probabilities initial-probabilities]
               [maximized-value (f initial-probabilities #:initial #t)])
     ([choice indexes]
-     [new-probability (in-range 1/100 1 1/100)])
+     [new-probability (in-range 1/100 1 (/ search-step 100))])
     (let* ([shifted-probabilities
-            (shift-choice-probability initial-probabilities choice
-                                      (exact->inexact new-probability))]
+            (shift-choice-probability
+             initial-probabilities
+             (list choice)
+             (list (exact->inexact new-probability)))]
            [v (f shifted-probabilities)])
       ;(printf "~a ~a~n" shifted-probabilities v)
       ; we'll let f return void so it can say "screw those options, i don't even want to vote"
@@ -105,9 +108,9 @@
 	      ; isn't worth penalizing the earnings for
 	      (list 1.0
 		    (* new-expected-earnings
-		       (log (if (< new-debt 1.0)
-				1.0
-				new-debt))))
+		       (+ 1.0 (log (if (< new-debt 1.0)
+                                       1.0
+                                       new-debt)))))
 	      ; but over that, we need to scale them
 	      (list 0.0
 		    (/ new-expected-earnings
@@ -221,6 +224,10 @@
                          (+ sum (if (> asset 0.0) asset 0)))]
               [(equal? attribute 'total-assets)
                (flsum new-assets)]
+              [(equal? attribute 'assets/debt)
+               (/ (for/fold ([sum 0.0]) ([asset new-assets])
+                            (+ sum (if (> asset 0.0) asset 0)))
+                  (cost->weight (apply min new-assets)))]
               [else (error "unknown attribute" attribute)])
             (void)
             )))))
@@ -235,9 +242,71 @@
        [(fl< a b) (done #f)]))
     #f))
 
+(define (void-safe-comparison >)
+  (lambda (a b)
+    (cond
+     [(and (void? a) (void? b)) #f]
+     [(and (not (void? a)) (void? b)) #t]
+     [(and (void? a) (not (void? b))) #f]
+     [else (> a b)])))
+
+(define (search-helper current
+                       best
+                       uf comparison
+                       #:current-utility [cu (uf current)]
+                       #:best-utility [bu (uf best)]
+                       #:iterations [remaining 150]
+                       #:temperature [temp 0.2])
+  (define unnormalized
+    (for/list ([p (in-list current)])
+      (sample (truncated-dist (normal-dist p temp) 0.001 0.999))))
+  (define normalized
+    (normalize-probabilities unnormalized))
+
+  (define newu (uf normalized))
+
+  (if (comparison newu cu)
+      (let ([new-best? (comparison newu bu)])
+        (if (<= remaining 0)
+            (if new-best? normalized best)
+            (search-helper normalized
+                           (if new-best? normalized best)
+                           uf comparison
+                           #:current-utility newu
+                           #:best-utility (if new-best? newu bu)
+                           #:iterations (sub1 remaining)
+                           #:temperature (* temp 0.98))))
+      (if (<= remaining 0)
+          best
+          (search-helper current best
+                         uf comparison
+                         #:current-utility cu
+                         #:best-utility bu
+                         #:iterations (sub1 remaining)
+                         #:temperature (* temp 0.98)))))
+
+(define (search-optimal-trade
+         utility-function
+         comparison-function
+         #:assets assets
+         #:debt-limit debt-limit
+         #:initial-probabilities initial-probabilities
+         #:beliefs beliefs
+         #:minimum-change [ignore1 0]
+         #:trade-limit [ignore2 0])
+  (define uf (utility-function 
+              #:beliefs beliefs
+              #:assets assets
+              #:initial-probabilities initial-probabilities
+              #:debt-limit debt-limit))
+  (list
+   (search-helper initial-probabilities initial-probabilities uf
+                  (void-safe-comparison comparison-function))))
+
 (define (find-optimal-trade
          utility-function
          comparison-function
+         #:search-step [search-step 1]
          #:assets assets
          #:debt-limit debt-limit
          #:initial-probabilities initial-probabilities
@@ -246,6 +315,7 @@
     (new-probabilities utility)
     (maximize-probability-adjustment
      #:probabilities initial-probabilities
+     #:search-step search-step
      #:function (utility-function
                  #:beliefs beliefs
                  #:assets assets
@@ -260,6 +330,7 @@
          #:assets initial-assets
          #:debt-limit debt-limit
          #:beliefs beliefs
+         #:search-step [search-step 1]
 	 #:minimum-change [minimum-change 1/3]
          #:initial-probabilities initial-probabilities
          #:trade-limit [trade-limit 10])
@@ -286,13 +357,19 @@
            #:assets new-assets #:beliefs beliefs
            #:initial-probabilities next-trade
            #:debt-limit debt-limit
+           ; search with smaller resolution on the cleanup
+           #:search-step 1/3
+           ; we've already found one trade that is worth executing
+           ; further improvements are "free" these days
+           #:minimum-change 1/20
            #:trade-limit (sub1 trade-limit)))))
 
 (define (determine-choice ps)
   ; better hope that one of the choices matches
   ; or this will explode. hooray
   (let ([p (car ps)])
-    (if (< (abs (- (/ (exact-round (* p 100)) 100) p)) 1e-14)
+    (if (or (not (<= 0.0 p 1.0))
+	    (< (abs (- (/ (round (* p 100)) 100) p)) 1e-14))
 	0
 	(if (null? (cdr ps))
             0 ;(error "couldn't find the choice")
@@ -398,7 +475,7 @@
     "\n"
     (cat "Δ assets:" 15)
     (pretty-asset-list (map - (last assets-per-trade) initial-assets))
-    (cat (exact-round (flsum (map - (last assets-per-trade) initial-assets))) 6)
+    (cat (round (flsum (map - (last assets-per-trade) initial-assets))) 6)
     "\n"
     (cat "final assets:" 15)
     (pretty-asset-list (last assets-per-trade))
@@ -432,6 +509,7 @@
          simple-adjustable
          comparison-function
  
+         search-optimal-trade
          find-optimal-trade
          find-optimal-trade-sequence
          

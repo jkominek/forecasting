@@ -5,6 +5,7 @@
 	 racket/function
 	 racket/match
 	 racket/set
+         racket/string
 	 (only-in racket/list last)
 	 racket/async-channel
          (planet bzlib/date/plt)
@@ -29,6 +30,9 @@
 (define exact-stats (make-parameter #f))
 (define web-trades (make-parameter #f))
 (define monitor (make-parameter #f))
+(define annealing-search (make-parameter #f))
+
+(define verbose (make-parameter #f))
 
 (question-database
  (load-question-database-url/cache-to-file  *standard-question-list-url* "data.json"))
@@ -55,6 +59,12 @@
   [("--monitor")
    "Monitor on going activity for trade opportunities"
    (monitor #t)]
+  [("--anneal")
+   "Uses simulated annealing to find trade"
+   (annealing-search #t)]
+  [("-v")
+   "Verbose"
+   (verbose #t)]
 
   #:once-any
   [("--python")
@@ -98,8 +108,10 @@
    (exact-stats #t)]
   [("--ramifications") choice probability
    "Displays the ramifications of shifting choice to probability"
-   (ramifications (cons (string->number choice)
-			(exact->inexact (/ (string->number probability) 100))))]
+   (ramifications (cons (map string->number (string-split choice ","))
+                        (map (lambda (p)
+                               (exact->inexact (/ (string->number p) 100)))
+                             (string-split probability ","))))]
   
   #:args raw-question-ids
   (question-ids (map string->number raw-question-ids))
@@ -113,17 +125,10 @@
 
 (define standings (make-hash))
 
-(define (update-standings q-id assets)
-  (hash-update! standings q-id
-		(lambda (orig)
-		  (map + orig assets))
-		(lambda ()
-		  (build-list (length assets) (lambda x 0.0)))))
-
 (for ([trade (fetch-user-trades (my-user-id))])
   (define q-id (hash-ref trade 'question_id))
-
-  (update-standings q-id (trade-assets trade)))
+  (update-standings q-id (trade-assets trade)
+                    #:standings standings))
 
 (define processed-up-to (make-hash))
 (define (seen-question-to q-id d)
@@ -152,32 +157,52 @@
 	 (define q (fetch-question q-id))
 	 (define opinion (get-opinion (question-id q)))
 
+         ;(define search-step
+         ;  (let ([m (question-serialized-model q)])
+         ;    (if (hash? m)
+         ;        (let ([range (hash-ref m 'range)]
+         ;              [stepSize (string->number (hash-ref m 'stepSize))])
+         ;          (/ (- (cadr range) (car range)) stepSize))
+         ;        1)))
+
 	 (seen-question-to q-id (question-updated-at q))
 
 	 (define trade-sequence
-	   (find-optimal-trade-sequence
-	    (strategy) (strategy>)
-	    #:assets (hash-ref standings q-id (empty-assets q))
-	    #:debt-limit (if (number? (forced-debt-limit))
-			     (forced-debt-limit)
-			     (* (opinion-strength opinion)
-				(maximum-points-tied-up (question-settlement-at q))))
-	    #:minimum-change 1/4
-	    #:beliefs (opinion-beliefs opinion)
-	    #:initial-probabilities (question-probability q)
-	    #:trade-limit 8
-	    ))
+           ;(time
+            (
+             (if (annealing-search)
+                 search-optimal-trade
+                 find-optimal-trade-sequence)
+             (strategy) (strategy>)
+             #:assets (hash-ref standings q-id (empty-assets q))
+             #:debt-limit (if (number? (forced-debt-limit))
+                              (forced-debt-limit)
+                              (* (opinion-strength opinion)
+                                 (maximum-points-tied-up (question-settlement-at q))))
+             #:minimum-change 1/4
+             #:beliefs (opinion-beliefs opinion)
+             #:initial-probabilities (question-probability q)
+             #:trade-limit 8
+             ));)
 
 	 (when (> (length trade-sequence) 0)
 	   (async-channel-put ready-trades
 			      (list q-id q opinion trade-sequence)))))))
   )
 
+(define seen-self-trades (mutable-set))
+
 (define (start-monitoring [delay-chunk 10])
   (sleep 60)
   (printf "checking ~a~n" (date->string (current-date)))
   (define trades (fetch-latest-trades))
   (define found-stuff #f)
+;  (for ([trade (in-hash-values trades)]
+;        #:when (equal? (my-user-id) (hash-ref trade 'user_id))
+;        #:unless (set-member? seen-self-trades (trade-id trade)))
+;    (printf "saw self trade ~a on ~a~n" (trade-id trade)
+;            (question-name (trade-question trade))))
+
   (for ([trade (in-hash-values trades)]
 	#:when (and (not (equal? (my-user-id) (hash-ref trade 'user_id)))
 		    (have-opinion? (hash-ref trade 'question_id))
@@ -219,7 +244,20 @@
         (sleep
          (min 1800
           (+ 60 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk))))))
-        (start-monitoring (+ 60 delay-chunk))))
+        (monitoring-comprehensive (+ 60 delay-chunk))))
+  )
+
+(define last-comprehensive-search (current-seconds))
+
+(define (monitoring-comprehensive delay-chunk)
+  ; check to see if we should refetch all questions and do a big search
+;  (when (> (- (current-seconds) last-comprehensive-search)
+;           (* 30 60))
+;    (question-database
+;     (load-question-database-url/cache-to-file  *standard-question-list-url* "data.json"))
+;    (perform-opinionated-search (filter have-opinion? (question-ids))))
+
+  (start-monitoring delay-chunk)
   )
 
 (define (display-ramifications question-ids choice probability)
@@ -313,13 +351,15 @@
       ; First step, define all the checks that are always available to us.
       (define potential-improvements
         `((credit
-           ,(hash-ref summary-details 'credit) 1.0)
+           ,(hash-ref summary-details 'credit)
+           ,(max 1.0
+                 (* 1/200 (apply min (hash-ref standings q-id (empty-assets q))))))
           (current-score
            ,(hash-ref summary-details 'current-score-improvement)
-           ,(max 10.0
+           ,(max 20.0
                  (* 1/10 (hash-ref summary-details 'initial-current-score))))
           (total-assets
-           ,(hash-ref summary-details 'total-Δassets) 20)
+           ,(hash-ref summary-details 'total-Δassets) 10)
           ))
 
       ; Next, if we have specific beliefs about this one, we've got some
@@ -329,14 +369,14 @@
               (cons
                `(final-score
                  ,(hash-ref summary-details 'final-score-improvement)
-                 ,(max 1.0
-                       #;(* 1/10 (hash-ref summary-details 'initial-final-score))))
+                 ,(max 0.5
+                       (* 1/200 (hash-ref summary-details 'initial-final-score))))
                potential-improvements)))
 
       ; Finally
       (unless
        ; Look to see if any of the attributes are sufficient
-       (for/fold ([sufficient-improvement? (ramifications)])
+       (for/fold ([sufficient-improvement? (or (verbose) (ramifications))])
                  ([thing potential-improvements])
           (match-let ([(list identifier value target)
                        thing])
@@ -376,16 +416,19 @@
 	(log-in "jkominek" "***REMOVED***"))
 
       (let ([trade
-	     (make-trade q-id (question-probability q)
+	     (make-trade q-id
+                         (question-ordered? q)
+                         (question-probability q)
 			 (last trade-sequence))])
 	(if trade
             ; got a good response back, trade successful
-	    (begin
+	    (let ([blank-standings (build-list (length (trade-assets trade)) (lambda x 0.0))])
 	      (printf "trade successful~n")
 	      (printf "standings were@ ~a"
-                      (pretty-asset-list (hash-ref standings q-id)))
+                      (pretty-asset-list (hash-ref standings q-id blank-standings)))
               ; update our memory of our current asset standings
-	      (update-standings q-id (trade-assets trade))
+	      (update-standings q-id (trade-assets trade)
+                                #:standings standings)
 	      (printf " now@ ~a~n"
                       (pretty-asset-list (hash-ref standings q-id)))
 	      )

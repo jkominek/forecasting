@@ -36,7 +36,7 @@ def fetch_for_user(id):
     else:
         data = json.loads(r.read())
 
-    sleep(2)
+    sleep(3)
 
     return data
 
@@ -250,10 +250,10 @@ def fetch_smattering():
 
     for id in random.sample(high_end, min(len(high_end), 5)):
         by_id(id)
-    for id in random.sample(fiveks, min(len(fiveks), 3)):
-        by_id(id)
     for id in random.sample(low_end, min(len(low_end), 5)):
         by_id(id)
+#    for id in random.sample(fiveks, min(len(fiveks), 3)):
+#        by_id(id)
 
 def update_for_new_day():
     fetch_smattering()

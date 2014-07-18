@@ -9,7 +9,7 @@
          (file "/home/jkominek/forecasting/utils.rkt")
          )
 
-(question-database (load-question-database-url/cache-to-file *standard-question-list-url* "data.json"))
+(question-database (load-question-database-url/cache-to-file *standard-question-list-url* "data.json" #:max-age 9000))
 
 (void
   (command-line
@@ -22,15 +22,22 @@
 		(length (opinion-beliefs (get-opinion q-id)))))
     (printf "opinion mismatch ~a~n" q-id)))
 
+(define max-trades 0)
+
 (for ([q-id (sort (all-question-ids) <)]
       #:unless (have-opinion? q-id))
 
   (define q (fetch-question q-id))
+
+  (when (> (question-trade-count q) max-trades)
+    (set! max-trades (question-trade-count q)))
+
   (when
    (and (question-visible? q)
         (not (question-locked? q))
         (or (not (hash-has-key? q 'settled_at))
-            (null? (hash-ref q 'settled_at))))
+            (null? (hash-ref q 'settled_at)))
+        (> (question-trade-count q) 0 #;(/ max-trades 10)))
 
    (printf "#~a \"~a\"~n"
 	   q-id (question-name q))

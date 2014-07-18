@@ -27,8 +27,10 @@
   (for/list ([choice indexes])
     (let ([new-f (lambda (new-probability)
                    (let ([shifted-probabilities
-                          (shift-choice-probability initial-probabilities choice
-                                                    (exact->inexact new-probability))])
+                          (shift-choice-probability
+                           initial-probabilities
+                           (list choice)
+                           (list (exact->inexact new-probability)))])
                      (let ([v (f shifted-probabilities)])
                        (if (void? v)
                            +nan.0

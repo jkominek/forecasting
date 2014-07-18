@@ -60,10 +60,10 @@
       (+ sum (* probability asset))))
   (printf "~a ~a  [~a ]~n"
           (cat user-name -15)
-          (cat (exact-round expected-earnings) 5)
+          (cat (round expected-earnings) 5)
           (string-join
            (for/list ([asset assets])
-             (cat (exact-round asset) 5))
+             (cat (round asset) 5))
            " ")))
 
 (for ([user-name users])
