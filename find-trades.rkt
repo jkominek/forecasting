@@ -380,7 +380,10 @@
                  ([thing potential-improvements])
           (match-let ([(list identifier value target)
                        thing])
-            (if (or (>= value target) sufficient-improvement?)
+            (if (or (>= value target)
+                    sufficient-improvement?
+                    (>= value (* (sqrt (random)) target))
+                    )
                 #t
                 (begin
                   ; complain about the ones that aren't
