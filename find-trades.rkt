@@ -362,11 +362,11 @@
            ,(hash-ref summary-details 'credit)
            ,(max 1.0
                  (* 1/200 (apply min (hash-ref standings q-id (empty-assets q))))))
-          (current-score
+          #;(current-score
            ,(hash-ref summary-details 'current-score-improvement)
            ,(max 20.0
                  (* 1/10 (hash-ref summary-details 'initial-current-score))))
-          (total-assets
+          #;(total-assets
            ,(hash-ref summary-details 'total-Δassets) 10)
           ))
 
@@ -390,7 +390,7 @@
                        thing])
             (if (or (>= value target)
                     sufficient-improvement?
-                    (>= value (* (sqrt (random)) target))
+                    ;(>= value (* (sqrt (random)) target))
                     )
                 #t
                 (begin

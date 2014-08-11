@@ -53,7 +53,7 @@
               (date- settled-at (seconds->date (current-seconds))))])
 	(if (< days-remaining 0.0)
 	    0.0
-	    (let ([v (fl* (fl* 0.666 1010.81)
+	    (let ([v (fl* (fl* 0.333 1010.81)
                           (flexp (fl* (fl* -0.0107473 1.0) days-remaining)))])
 	      (fl- 0.0
                    (cond

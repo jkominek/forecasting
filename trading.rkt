@@ -69,21 +69,28 @@
   (define asset-correction
     (for/list ([i-a initial-assets])
       (if (<= (+ i-a bankroll) 0)
-          (- 0.1 (+ i-a bankroll))
+          (- 10 (+ i-a bankroll))
           0)))
   (define per-asset-bankroll
     (for/list ([a initial-assets]
                [ac asset-correction])
               (+ a ac bankroll)))
+  (define initial-debt (apply min initial-assets))
 
   (lambda (new-probabilities #:initial [initial #f])
+    (define new-outcomes (lmsr-outcomes initial-probabilities new-probabilities))
+    (define new-debt (apply min (map + new-outcomes initial-assets)))
     (let/ec no-good
-            (for/sum ([b beliefs]
-                      [o (lmsr-outcomes initial-probabilities new-probabilities)]
-                      [pab per-asset-bankroll])
-                     (if (< (+ o pab) 0)
-                         (no-good (void))
-                         (* b (log (+ o pab))))))))
+      (when (and (< initial-debt debt-limit)
+                 (< new-debt initial-debt))
+            (no-good (void)))
+
+      (for/sum ([b beliefs]
+                [o new-outcomes]
+                [pab per-asset-bankroll])
+               (if (< (+ o pab) 0)
+                   (no-good (void))
+                   (* b (log (+ o pab))))))))
 
 (define (utility-function
          #:beliefs beliefs

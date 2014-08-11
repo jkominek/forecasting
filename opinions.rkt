@@ -1057,13 +1057,13 @@
 (o 827 '[1000 1 1900])
 
 ; On what date will Dolly be upgraded to a hurricane?
-(o 834 '[100 150 200 150 200] weak)
+(o 834 '[10 150 200 150 200] weak)
 
 ; Which of the following Atlantic tropical storms will be the next to make U. S. landfall?
-(o 835 '[100 98 70 50 30 10 2])
+(o 835 '[99 98 70 50 30 10 2])
 
 ; Which of the following Atlantic tropical storms will be the next to be upgraded to a hurricane?
 (o 836 '[45 26 14 7 3 1 3])
 
 ; Will NASA's measurement of thrust from an 'impossible' space drive be reproduced on the next try?
-(o 837 (yes 33.3))
+(o 837 (yes 33))
