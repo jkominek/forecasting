@@ -23,8 +23,8 @@
 (define forced-debt-limit (make-parameter #f))
 (define flip-optimization (make-parameter #f))
 
-(define strategy (make-parameter utility-function))
-(define strategy> (make-parameter comparison-function))
+(define strategy (make-parameter kelly-utility))
+(define strategy> (make-parameter >))
 
 (define ramifications (make-parameter #f))
 (define exact-stats (make-parameter #f))
@@ -65,8 +65,15 @@
   [("-v")
    "Verbose"
    (verbose #t)]
+  [("--safe")
+   "Safe opinions only"
+   (include-unsafe #f)]
 
   #:once-any
+  [("--kelly")
+   "Use Kelly betting"
+   (strategy kelly-utility)
+   (strategy> >)]
   [("--python")
    "Use a duplicate(?) of the final Python rule"
    (strategy python-utility)
@@ -193,6 +200,7 @@
 (define seen-self-trades (mutable-set))
 
 (define (start-monitoring [delay-chunk 10])
+  ;(sleep (* 8 60))
   (sleep 60)
   (printf "checking ~a~n" (date->string (current-date)))
   (define trades (fetch-latest-trades))
@@ -369,7 +377,7 @@
               (cons
                `(final-score
                  ,(hash-ref summary-details 'final-score-improvement)
-                 ,(max 0.5
+                 ,(max 1.0
                        (* 1/200 (hash-ref summary-details 'initial-final-score))))
                potential-improvements)))
 

@@ -61,6 +61,30 @@
           (values new-probabilities maximized-value)))
     ))
 
+(define (kelly-utility #:beliefs beliefs
+                       #:assets initial-assets
+                       #:initial-probabilities initial-probabilities
+                       #:debt-limit [debt-limit 0])
+  (define bankroll (- debt-limit))
+  (define asset-correction
+    (for/list ([i-a initial-assets])
+      (if (<= (+ i-a bankroll) 0)
+          (- 0.1 (+ i-a bankroll))
+          0)))
+  (define per-asset-bankroll
+    (for/list ([a initial-assets]
+               [ac asset-correction])
+              (+ a ac bankroll)))
+
+  (lambda (new-probabilities #:initial [initial #f])
+    (let/ec no-good
+            (for/sum ([b beliefs]
+                      [o (lmsr-outcomes initial-probabilities new-probabilities)]
+                      [pab per-asset-bankroll])
+                     (if (< (+ o pab) 0)
+                         (no-good (void))
+                         (* b (log (+ o pab))))))))
+
 (define (utility-function
          #:beliefs beliefs
          #:assets initial-assets
@@ -505,6 +529,7 @@
     ) ""))
 
 (provide utility-function
+         kelly-utility
 	 python-utility
          simple-adjustable
          comparison-function

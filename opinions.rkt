@@ -145,7 +145,7 @@
 (o 18 (yes 10))
 
 ; Will Australia reduce its greenhouse gas emissions unconditionally by 5% below their 2000 levels by January 01, 2020?
-(o 21 (yes 44))
+(o 21 (yes 5))
 
 ; When will the Unique Games Conjecture be proven?
 (o 25 '[0.5 5 10 20 30])
@@ -175,10 +175,10 @@
 (o 144 (yes 1))
 
 ; Will Rosetta rendezvous with Comet 67P/Churyumov-Gerasimenko? 
-(o 169 (yes 90))
+(o 169 (yes 100))
 
 ; How many teams competing in the Nokia Sensing XChallenge will receive distinguished awards?
-(o 180 '[5 10 8 6 4 2])
+(o 180 '[5 10 10 10 10 9])
 
 ; Will the US National Security Agency build a gate model quantum computer before the end of 2017?
 (o 437 (yes 50) weak)
@@ -190,10 +190,10 @@
 (o 549 '[1 2 3 4 5 6 7])
 
 ; A “smart city” runs important systems—transit, water, power, trash removal—entirely by computers. When will a city with a population of at least one million people adopt smart city technology?
-(o 568 '[1 2 3 4 5 6 7 8 9 10 11 15])
+;(o 568 '[1 2 3 4 5 6 7 8 9 10 11 15])
 
 ; Will Microsoft Office for iPad become one app instead of three apps (Word, Excel and Powerpoint) by the end of 2014?
-(o 580 (no 75))
+(o 580 (no 80) strong)
 
 ; When will the first primate be cloned?
 (o 582 '[0.4 1 1 1 5])
@@ -217,10 +217,10 @@
 (o 722 '[1 2 3 4 5 6 7 8 9 9] weak)
 
 ; When Microsoft launches Skype Translator, the real-time language translation service for its video chat application Skype, will it be a free add-on?
-(o 706 (yes 85))
+(o 706 (yes 89) (* 2 strong))
 
 ; When will Skype provide voice and text language translation to its customers during calls? 
-(o 694 '[1 10 11 5])
+(o 694 '[1 10 11 5] (* 3 strong))
 
 ; Will NASA's Cold Atom Lab successfully achieve a temperature of 100 picokelvin? 
 (o 322 (yes 45) weak)
@@ -249,7 +249,7 @@
 (o 670 (no 80) (varying-strength "2014-06-01" "2014-11-01"))
 
 ; Will a wearable camera with speed of more than 60 frames per second at 4K resolution be commercially available by the end of 2015?
-(o 400 (yes 60) (varying-strength "2014-06-01" "2015-10-01"))
+(o 400 (yes 60) (* 2 strong))
 
 ; Will implantable sensors for monitoring cancer enter clinical trials by the end of 2015?
 (o 411 (yes 33.3))
@@ -261,7 +261,7 @@
 (o 425 (yes 60))
 
 ; Will a cellphone that charges itself using self-charging power cells (SCPC) be demonstrated publicly before the end of 2015?
-(o 427 (yes 49))
+(o 427 (yes 49) (* 3 strong))
 
 ; Will DARPA's Mobile Hotspot program enter Phase 3 by the end of June 2015?
 (o 681 (yes 45) weak)
@@ -272,17 +272,16 @@
 ; How fast will the next 100 meter human sprinting world record be?
 ; 2015 world championship in athletics is in beijing, ending sept 6th 2015
 ; unlikely (impossible?) any record could be set in 2015 after that.
-(o 666 '[0.1 0.11 0.12 0.15 1 5]
-   (varying-strength "2014-09-01" "2015-09-06"))
+(o 666 '[0.1 0.11 0.12 0.15 1 5] (varying-strength "2014-09-01" "2015-09-06"))
 
 ; When will Blockchain My Wallet register 2,000,000 users?
-(o 461 '[0 1 99 0 0 0] 0.2)
+;(o 461 '[0 0 100 0 0 0] (* 10 strong))
 
 ; Will there be at least one female winner of a Fields Medal in 2014?
-(o 462 (yes 20) 0.1)
+(o 462 (yes 20) weak)
 
-; #466 "How many venues will be listed on Coinmap on December 31, 2014?"
-(o 466 '[0 0 0 0 1 5 10 20])
+; "How many venues will be listed on Coinmap on December 31, 2014?"
+(o 466 '[0.0001 0.0001 0.0001 0.0001 0.0001 2 9 20])
 
 ; Will Google make end-to-end PGP encryption a core feature in Gmail by August 2014?
 ;(o 585 (yes 0))
@@ -291,22 +290,22 @@
 (o 26 '[1 10 10 10 20])
 
 ; How many female chess players will hold a rating of at least 2700 on JUL 01 2016?
-(o 318 '[10 5 1 0.01 0.001])
+(o 318 '[10 5 1 0.01 0.001] strong)
 
 ; Will the Apple iWatch be commercially available by the end of September 2014?
-(o 401 (no 90))
+(o 401 (no 91) strong)
 
 ; Will Bluefin-21 locate the black box from Malaysian Airlines flight MH-370?
 ;(o 464 (no 99) strong)
 
 ; Will 23andMe offer health-related genetic reports for new customers by December 2014?
-(o 659 (yes 33.333) weak)
+(o 659 (yes 32) weak)
 
 ; Will the International Sun-Earth Explorer 3 start to collect data and send it to Earth?
 (o 644 (yes 10))
 
 ; Will NASA land a telepresence robot on Venus by 2020?
-(o 653 (no 98) (* 2 strong))
+(o 653 (no 100) (* 2 strong))
 
 ; When will UHD programming be available from Netflix on optical disc?
 (o 587 '[9 20 25 46])
@@ -315,7 +314,7 @@
 (o 636 '(1 10 9 8 7 6))
 
 ; Will a solar powered Apple laptop with photovoltaic cells located in the display module be commercially available before the end of 2018?
-(o 330 (no 90) weak)
+(o 330 (no 99.99))
 
 ; Will there be a new digital currency based on a P2P network, whose real money supply will be valued at more than $1 billion in 2014?
 (ou 102 (yes 25))
@@ -333,7 +332,7 @@
 (o 539 '[0 0 0 0 0 100])
 
 ; Will quantum key distribution be integrated into a prototype mobile device by 1 January 2016?
-(o 562 (no 75) weak)
+(o 562 (no 80))
 
 ; When will the first U.S. state enact legislation allowing consumer operation of driverless cars?
 (o 149 '[1.1 1.25 1.5 1.75 2])
@@ -345,10 +344,10 @@
 (o 313 '[5 4 3 2 1])
 
 ; Will Paypal integrate Bitcoin payments by February 28 2015?
-(o 341 (no 90))
+(o 341 (no 90) (* 2 strong))
 
 ; Will Google integrate Bitcoin payments into Google Wallet by February 28 2015?
-(o 338 (no 90))
+(o 338 (no 90) (* 2 strong))
 
 ; Will either the United States or China be able to build an encryption cracking quantum computer before the end of 2018?
 (o 436 (yes 15))
@@ -357,7 +356,7 @@
 (ou 418 (yes 9.5))
 
 ; Will additional evidence of waves in Titan's seas be observed in new images by the end of the Cassini mission? 
-(o 456 (yes 40))
+(o 456 (yes 40) strong)
 
 ; Will there be a hard fork to the Bitcoin block chain by December 31 2014?
 (ou 459 (yes 20))
@@ -366,9 +365,7 @@
 (o 442 (no 90) strong)
 
 ; Will quantum key distribution be integrated into a commercially available mobile device by 1 January 2017?
-(o 534 (no 90) (varying-strength "2015-01-01" "2016-12-01"
-				 #:initial-strength weak
-				 #:final-strength (* 2 strong)))
+(o 534 (no 90) (* 3 strong))
 
 ; Since 2009, the record speed for a robot performing the industry-standard pick-and-place test has been 5 cycles/second. What will be the fastest robotic pick-and-place rate achieved by the end of 2014? 
 (o 384 (map (lambda (x) (/ (expt 3 x)))
@@ -387,10 +384,10 @@
 (o 424 (no 66))
 
 ; Will project NA62 at the CERN in Geneva make a discovery of new unknown particles not predicted by the Standard Model of particle physics in 2014?
-(o 183 (no 98) weak)
+(o 183 (no 98))
 
 ; What will the unemployment rate for ACS chemists be in 2014?
-(o 348 '[3 2 1 0.5 0.25 0] weak)
+(o 348 '[92 8 0 0 0 0])
 
 ; What kind of a computing device will be used to create the first 8-man chess endgame tablebase?
 (o 312 '[1 100 1 1 10] (varying-strength "2014-01-01" "2020-01-01"
@@ -404,10 +401,10 @@
 ;(o 99 '[0.5 10 1 0.1])
 
 ; Will the NASA's Mars Atmosphere and Volatile Evolution (MAVEN) spacescraft launched on November 17 2013 enter the Mars orbit by the end of September 2014?
-(o 143 (yes 91))
+(o 143 (yes 97))
 
 ; Will the silver nanowire ink touch sensitive screens being developed by 3M and Cambrios be in commercially available smartphones by the end of 2015?
-(o 363 (yes 33) weak)
+(o 363 (yes 33))
 
 ; Will the 9-man chess endgame tablebase be created before JAN 01 2030?
 (o 311 (yes 50) (varying-strength "2014-06-01" "2029-01-01"))
@@ -496,7 +493,7 @@
 (ou 506 '[100 150 160 160 20 10 2 1])
 
 ; Will evidence of proton decay be reported in the scientific literature by the end of 2017?
-(o 508 (no 95))
+(o 508 (no 99) (* 3 strong))
 
 ; Will Breathometer Inc. begin fulfilling international orders for the Breathometer Smartphone Breathalyzer before August 2014? 
 (o 509 (yes 0.0))
@@ -514,13 +511,13 @@
 (o 176 '[95 4 1 0 0] (* 2/3 strong))
 
 ; On NOV 2014 what will be the (performance-weighted) gigaflops per core of the Top 500? (177)
-(o 177 '[0 80 20 0 0] strong)
+(o 177 '[0.001 80 20 0.001 0.001] strong)
 
 ; On NOV 2015, what will be the (performance-weighted) gigaflops per core of the Top 500?
 (o 178 '[0 50 50 0 0] strong)
 
 ; In the week of November 23rd-29th 2014 will Walmart be searched more frequently than Amazon in Google Search?
-(o 649 (yes 90))
+(o 649 (yes 90) strong)
 
 ; when will a fully autonomous (self-driving) car made by a major auto maker drive more than 60 miles in the united states without input from the driver?
 (o 696 '[2 3 4 3 2 1] weak)
@@ -634,7 +631,7 @@
 (o 371
    (primary-option 6 0.5 ; none of them accept
                    (map *
-                        '[100  40  33  75  66  33   0] ; likelihood of running
+                        '[100  40  19  75  66  33   0] ; likelihood of running
                         '[ 75  50  60 100  50  50   0] ; anybody knows bitcoin
                         '[ 66  33  40  80  50  40   0] ; accept before others
                         )))
@@ -667,10 +664,10 @@
 ;(o 538 '[0.000 0.000 0.01 0.02 0.03 0.95] 0.025)
 
 ; Will the number of exposures to carbon monoxide reported in the 2013 Annual Report from the National Poison Data System (NPDS) be lower than 10000?
-(o 189 (yes 0.9))
+(o 189 (yes 1))
 
 ; Will there be 15 or more named storms (including subtropical storms) in the Atlantic-Caribbean-Gulf of Mexico region during the 2014 hurricane season?
-(o 410 (yes 26) weak)
+(o 410 (yes 25) weak)
 
 ; When will floating wind turbines be used in a commercial offshore wind turbine farm?
 (o 712 '[1 2 3 4 5 6])
@@ -685,16 +682,16 @@
 (o 709 '[6 7 7 8 7 4])
 
 ; Will a new clean & jerk world record be set before or during the 2016 Olympic Games?
-(o 711 (yes 25))
+(o 711 (yes 25) (* 6 strong))
 
-; Will Huawei confirm allegations that "back doors" where installed on their computer hardware before being sold?
-(o 623 (yes 10) 0.1)
+; Will Huawei confirm allegations that "back doors" were installed on their computer hardware before being sold?
+(o 623 (yes 5) (* 2 strong))
 
 ; Will a solar-powered plane circumnavigate Earth before the end of 2015?
 (o 629 (yes 33) weak)
 
 ; Will Google incorporate infrared vision into future Google Glass models by the end of 2017?
-(o 535 (yes 49))
+(o 535 (yes 49) strong)
 
 ; In 2014 will the Arctic sea ice minimum day occur after September 15th?
 (o 385 (yes 50) weak)
@@ -706,13 +703,13 @@
 (o 32 '[0 1 2 3 6] weak)
 
 ; Internet of things 20 billion connected devices at end of 2013. how many at end of 2014?
-(o 566 '[1 10 11 10 8] weak)
+(o 566 '[1 10 12 10 8] weak)
 
 ; world produced 4.4 zettabytes in 2013. how much in 2014?
 (o 620 '[0.2 2 9 10 6] weak)
 
 ; Will the Mars Curiosity Rover discover organic matter on Mars by September 1 2014?
-(o 127 (no 100))
+(o 127 (no 99.99999999999))
 
 ; which smallsat company will be the first to provide daily re-imaging of the earth?
 (o 714 '[60 80 10 75 80 50])
@@ -730,7 +727,7 @@
 (o 723 '[1 1]) ; range from 2280km to 2400km
 
 ; free-form gesures be used as access passwords in commercial touchscreen mobile devices?
-(o 724 '[10 10 10 5])
+(o 724 '[10 10 10 5] strong)
 
 ; high-precision measurement of antiproton's magnetic moment?
 (o 725 '[10 11 12 15] weak)
@@ -771,7 +768,7 @@
 (o 133 '[10 10 30 10 45])
 
 ; Will the Indian Space Research Organization's Mangalyaan probe achieve orbital insertion around Mars before NASA's MAVEN spacecraft in September 2014?
-(o 153 (yes 18))
+(o 153 (yes 10))
 
 ; In the US patent system, will at least 2.5% of pharma/biotech patents issued in 2014 refer to the term nano* in their title or abstract?
 (o 154 (yes 66))
@@ -795,7 +792,7 @@
 (o 337 (cons 0 (for/list ([i (in-range 0 4)]) (expt 11 i))))
 
 ; When will the Rosetta's small robotic lander, Philae, land successfully on the surface of a comet?
-(o 349 '[0.1 0.5 9.75 8.5 7.25 6 5.75 8])
+(o 349 '[0 0 10 8 6 4 2 5])
 
 ; Will US wind energy consumption decrease in 2014? 
 (o 359 (yes 9))
@@ -822,13 +819,13 @@
 (o 557 '[10 1 10])
 
 ; Will a VC-funded Bitcoin business declare bankruptcy by December 31, 2014?
-(ou 624 (no 95))
+(ou 624 (no 95) strong)
 
 ; How many threatened languages will the Ethnologue language catalog report in its 18th edition?
 (ou 663 '[1 5 30 50 30])
 
 ; When will the Bailiwick of Jersey have over 50 companies that accept Bitcoin as a form of payment?
-(o 729 '[3 4 5 6])
+(o 729 '[1 4 5 6])
 
 ; At its initial launch, will the range of Tesla's Gen 3 electric car be greater than 150 miles? 
 (o 731 (yes 90))
@@ -914,15 +911,15 @@
 (o 129 (yes 20))
 
 ; What will be the average rating of the top 10 chess players in the world on JAN 01 2016? 
-(o 314 '[1 100 10])
+(o 314 '[1 100 10] strong)
 
 ; Will the U.S. be the world leader in total oil production in 2015?
-(o 484 (yes 80))
+(o 484 (yes 80) (* 4 strong))
 
 ; If the icy surface of Pluto's giant moon Charon is cracked, analysis of the fractures could reveal if its interior was warm, perhaps warm enough to have maintained a subterranean ocean of liquid water. Will researchers observe cracks in Charon's surface?
 (o 740 (yes 40))
 
-(let* ([today (seconds->date (current-seconds))]
+#;(let* ([today (seconds->date (current-seconds))]
        [up-to-date-day (- (date-day today) 3/2)]
        [season-start -5]
        [days-remaining (- (+ 31 2) up-to-date-day)]
@@ -975,10 +972,10 @@
 (o 756 (linear-scale 1010 #:lo 999.0 #:hi 1060.0))
 
 ; Will a smartphone that incorporates a temperature sensor in the glass be publically available by Jan 1 2017?
-(o 757 (yes 10))
+(o 757 (yes 10) strong)
 
 ; A huge new hole or crater was recently discovered in a remote area in Siberia. What will the source of this hole be determined to be?
-(o 758 '[2 3 0 12])
+(o 758 '[1 2 0 50])
 
 ; When will a handheld, flexible nanocellulose video screen be comercially available for sale?
 (o 759 '[1 2 2 3 3 4 9])
@@ -990,26 +987,20 @@
 (o 762 '[1.5 2 2 3 3 2])
 
 ; Will NIST create uniform standards across all OSAC defined forensic disciplines by 2019?
-(o 763
-   (goes-to no 85
-            #:start "2014-07-20" #:stop "2018-12-01"))
+; (o 763 (goes-to no 85 #:start "2014-07-20" #:stop "2018-12-01"))
 
 
 ; "Will SpaceX be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(ou 764 (yes 60))
+(ou 764 (yes 61)) ; adjusted from 60% belief by genie
 
 ; "Will Sierra Nevada be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(ou 765 (yes 50.1))
+(ou 765 (yes 52)) ; adjusted from 51% belief by genie
 
 ; "Will Boeing be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(ou 766 (yes 75))
+(ou 766 (yes 76)) ; adjusted from 75% belief by genie
 
 ; "How many organizations will be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(o 767 (map *
-            '[  5 27.5 45.0 22.5] ; based on above individual beliefs
-            '[100  105  100   95] ; eh, probably pick _something_
-            )
-   0.1)
+(o 767 '[4.1 25.9 46.2 23.6] 0.1) ; computed from genie network
 
 ; "Will SpaceX successfully complete the first manned test flight of its Dragon V2 spacecraft before June 30, 2016?"
 (o 768 (yes 45) weak)
@@ -1024,7 +1015,7 @@
 (o 771 '[100 80 70 50])
 
 ; "Will a NASA-funded 'space taxi' transport astronauts to the International Space Station before the end of 2017?"
-(o 772 (yes 5))
+(o 772 (yes 5) strong)
 
 ; When will a brain computer interface (BCI) that can translate brain signals to audible speech be commercially available?
 (o 799 '[1.5 1 2 3 15])
@@ -1045,13 +1036,13 @@
 (o 806 '[10 20 15 5 15])
 
 ; When will resistive random access memory (RRAM) be used in a commercially available smartphone?
-(o 812 '[1 100 200 250 300])
+(o 812 '[1 100 200 250 300] strong)
 
 ; When Google Glass is released to the general public, what will its intial price be?
 (o 822 (linear-scale 900 #:lo 300 #:hi 1200))
 
 ; How close will the closest near Earth object that is tracked by NASA come to Earth in the 60 days between August 2nd and September 30th 2014?
-(o 823 '[15 30 50 50 2])
+   ;;;; (o 823 '[15 30 50 20 0])
 
 ; When will a distinct source of ultraâhigh-energy cosmic rays be discovered?
 (o 824 '[2.4 1 1 1 5])
@@ -1065,3 +1056,14 @@
 ; Will the ALPHA and AEgIS experiments conducted by CERN indicate that the ratio of gravitational mass to inertial mass of antihydrogen is positive or negative?
 (o 827 '[1000 1 1900])
 
+; On what date will Dolly be upgraded to a hurricane?
+(o 834 '[100 150 200 150 200] weak)
+
+; Which of the following Atlantic tropical storms will be the next to make U. S. landfall?
+(o 835 '[100 98 70 50 30 10 2])
+
+; Which of the following Atlantic tropical storms will be the next to be upgraded to a hurricane?
+(o 836 '[45 26 14 7 3 1 3])
+
+; Will NASA's measurement of thrust from an 'impossible' space drive be reproduced on the next try?
+(o 837 (yes 33.3))
