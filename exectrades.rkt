@@ -5,7 +5,7 @@
          json
 	 (planet bzlib/date/plt)
 	 (file "/home/jkominek/forecasting/questions.rkt")
-	 (only-in (file "/home/jkominek/forecasting/utils.rkt") lmsr-outcomes first-value))
+	 (only-in (file "/home/jkominek/forecasting/utils.rkt") lmsr-outcomes first-value rate-limit))
 
 (define cookie-header (make-parameter #f))
 
@@ -83,6 +83,7 @@
 	    q-id new-value-str dimension old-value-str
 	    (n->s (+ 0.0001 (max 0.0 computed-cost)))))
 
+  (rate-limit)
   (define-values
     (status-line headers body-port)
     (http-conn-sendrecv! hc query
@@ -104,6 +105,8 @@
   (->* ()
        (#:hc http-conn?)
        (hash/c natural-number/c jsexpr?))
+
+  (rate-limit)
   (define-values
     (status-line headers body-port)
     (http-conn-sendrecv! hc "/users/relevant_activities?group_by=question"

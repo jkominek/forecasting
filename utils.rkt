@@ -130,13 +130,16 @@
 (define rate-limiter (make-channel))
 (void (thread
  (lambda ()
+   (channel-put rate-limiter 'startup)
    (for ([i (in-naturals)])
      (channel-put rate-limiter i)
-     (sleep 1)))))
+     (sleep 7.5)))))
+(define (rate-limit)
+  (void (channel-get rate-limiter)))
 
 (define (get-gzip-pure-port url-string)
   ; prevents us from hitting the web site very hard
-  (channel-get rate-limiter)
+  (rate-limit)
   (printf "fetching from network!~n")
 
   (time
@@ -199,4 +202,5 @@
 	 pretty-asset-list
 	 pretty-string-list
          update-standings
+         rate-limit
 	 )
