@@ -360,7 +360,7 @@
       (define potential-improvements
         `((credit
            ,(hash-ref summary-details 'credit)
-           ,(max 1.0
+           ,(max 2.0
                  (* 1/200 (apply min (hash-ref standings q-id (empty-assets q))))))
           #;(current-score
            ,(hash-ref summary-details 'current-score-improvement)
@@ -375,9 +375,16 @@
       (when (hash-has-key? summary-details 'final-score-improvement)
         (set! potential-improvements
               (cons
+               `(kelly-improvement
+                 ,(hash-ref summary-details 'kelly-improvement)
+                 ,(min 0.25
+                       (* 3/100 (hash-ref summary-details 'initial-kelly))))
+               potential-improvements))
+        (set! potential-improvements
+              (cons
                `(final-score
                  ,(hash-ref summary-details 'final-score-improvement)
-                 ,(max 1.0
+                 ,(max 2.0
                        (* 1/200 (hash-ref summary-details 'initial-final-score))))
                potential-improvements)))
 
