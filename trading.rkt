@@ -61,32 +61,31 @@
           (values new-probabilities maximized-value)))
     ))
 
+(define (calc-per-asset-bankroll assets debt-limit)
+  (for/list ([a assets])
+    (if (>= a debt-limit)
+        (max 1 (- a debt-limit))
+        1)))
+
 (define (kelly-utility #:beliefs beliefs
                        #:assets initial-assets
                        #:initial-probabilities initial-probabilities
                        #:debt-limit [debt-limit 0])
   (define bankroll (- debt-limit))
-  (define asset-correction
-    (for/list ([i-a initial-assets])
-      (if (<= (+ i-a bankroll) 0)
-          (- 10 (+ i-a bankroll))
-          0)))
   (define per-asset-bankroll
-    (for/list ([a initial-assets]
-               [ac asset-correction])
-              (+ a ac bankroll)))
+    (calc-per-asset-bankroll initial-assets debt-limit))
   (define initial-debt (apply min initial-assets))
 
   (lambda (new-probabilities #:initial [initial #f])
-    (define new-outcomes (lmsr-outcomes initial-probabilities new-probabilities))
-    (define new-debt (apply min (map + new-outcomes initial-assets)))
+    (define outcomes (lmsr-outcomes initial-probabilities new-probabilities))
+    (define new-debt (apply min (map + outcomes initial-assets)))
     (let/ec no-good
       (when (and (< initial-debt debt-limit)
                  (< new-debt initial-debt))
             (no-good (void)))
 
       (for/sum ([b beliefs]
-                [o new-outcomes]
+                [o outcomes]
                 [pab per-asset-bankroll])
                (if (< (+ o pab) 0)
                    (no-good (void))
@@ -524,6 +523,10 @@
 	  (hash-set! sh 'initial-final-score initial-final-score)
 	  (hash-set! sh 'new-final-score new-final-score)
 	  (hash-set! sh 'final-score-improvement (- new-final-score initial-final-score))
+          (hash-set! sh 'initial-kelly (simple-kelly beliefs initial-assets debt-limit))
+          (hash-set! sh 'final-kelly (simple-kelly beliefs (last assets-per-trade) debt-limit))
+          (hash-set! sh 'kelly-improvement
+                     (- (hash-ref sh 'final-kelly) (hash-ref sh 'initial-kelly)))
 
           (string-join
            (list (cat "final score:" 15)
@@ -531,9 +534,21 @@
                  "\n"
 		 (cat "exp earnings:" 15)
 		 (cat new-final-score 8 -2.)
-		 "\n") ""))
+		 "\n"
+                 (cat "kelly util:" 15)
+                 (cat (hash-ref sh 'final-kelly) 8 -2.)
+                 "  change: "
+                 (cat (hash-ref sh 'kelly-improvement) 8 -4.)
+                 "\n"
+           ) ""))
         "")
     ) ""))
+
+(define (simple-kelly beliefs assets debt-limit)
+  (let ([pab (calc-per-asset-bankroll assets debt-limit)])
+    (sum (map *
+              beliefs
+              (map log pab)))))
 
 (provide utility-function
          kelly-utility
