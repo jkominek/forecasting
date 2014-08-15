@@ -2,6 +2,7 @@
 
 (require (planet bzlib/date/plt)
          racket/set
+         racket/list
 	 (file "/home/jkominek/forecasting/utils.rkt"))
 
 (define opinion-database
@@ -19,7 +20,7 @@
 (define (get-all-opinions #:opinion-database [opinion-database (opinion-database)])
   (hash-keys opinion-database))
 
-(struct opinion [for-id beliefs strength]
+(struct opinion [for-id beliefs strength settlement]
 	#:constructor-name make-opinion)
 
 (define (wrapped-opinion-beliefs o)
@@ -38,7 +39,16 @@
 (provide (rename-out [wrapped-opinion-beliefs opinion-beliefs]
 		     [wrapped-opinion-strength opinion-strength]))
 
-(define (o id beliefs [strength 1.0])
+(define (o id beliefs
+           [strength 1.0]
+           #:settlement [settlement #f])
+  (if settlement
+      (map (lambda (d)
+             (if (string? d)
+                 (date->seconds (read-iso8601 d))
+                 d))
+           settlement)
+      settlement)
   (hash-set! (opinion-database)
 	     id
 	     (make-opinion
@@ -48,7 +58,43 @@
 		  (lambda () beliefs))
 	      (if (procedure? strength)
 		  strength
-		  (lambda () strength)))))
+		  (lambda () strength))
+              settlement))
+  )
+
+; settlement range
+(define (sr start later #:frac [frac 0.5])
+  (let ([beginning (if (equal? start 'now)
+                       (current-seconds)
+                       (let ([provided (date->seconds (read-iso8601 start))])
+                         (if (< provided (current-seconds))
+                             (current-seconds)
+                             provided)))]
+        [later (date->seconds (read-iso8601 later))])
+      (if (< later beginning)
+          later
+          (+ beginning (* frac (- later beginning))))))
+  
+(define (sr-bands dividers #:fracs [raw-fracs #f])
+  (define fracs (if raw-fracs
+                    raw-fracs
+                    (make-list (length dividers) 0.5)))
+  (append (for/list ([start dividers]
+                     [stop (cdr dividers)]
+                     [frac fracs])
+            (sr start stop #:frac frac))
+          (list (last dividers))))
+
+(define (yes-sooner deadline #:frac [frac 0.5])
+  (let ([end (date->seconds (read-iso8601 deadline))]
+        [now (current-seconds)])
+    (if (< end now)
+        (list end end)
+        (list end
+              (+ now (* (- end now) frac))))))
+(define (no-sooner deadline #:frac [frac 0.5])
+  (let ([v (yes-sooner deadline frac)])
+    (list (cadr v) (car v))))
 
 (define include-unsafe (make-parameter #t))
 
@@ -148,22 +194,31 @@
 (o 21 (yes 5))
 
 ; When will the Unique Games Conjecture be proven?
-(o 25 '[0.5 5 10 20 30])
+(o 25 '[0.5 5 10 20 30]
+   #:settlement
+   (sr-bands (list 'now "2015-01-01" "2020-01-01" "2030-01-01" "2050-01-01")
+             #:fracs '(0.8 0.75 0.7 0.65)))
 
 ; When will the existance of a strongly polynomial-time algorithm for linear programming be proven?
-(o 36 '[0.5 5 10 20])
+(o 36 '[0.5 5 10 20]
+   #:settlement
+   (sr-bands (list 'now "2015-01-02" "2020-01-02" "2030-01-01")
+             #:fracs '(0.8 0.75 0.7)))
 
 ; Will a proof be published by 2050 showing Matrix Multiplication in O(n^{2+ε}) time, for every constant ε > 0?
 ;(o 57 (no 60))
 
 ; Will there be a 50%-effective malaria vaccine available for general use before 2015?
-(o 84 (no 90))
+(o 84 (no 90)
+   #:settlement (yes-sooner "2015-01-01" #:frac 0.9))
 
 ; When will a method store qubit superposition states indefinitely room temp less than 50 percent data loss?
-(o 123 '[0 0.5 0.6 10])
+(o 123 '[0 0.5 0.6 10]
+   #:settlement (sr-bands (list 'now "2014-07-01" "2014-12-31" "2015-07-01")))
 
 ; When will research cell efficiency least one type of solar cell in NREL emerging photovoltaic cell larger than CdTe search solar cell efficiency?
-(o 125 '[0 0 0 0.1 1 10])
+(o 125 '[0 0 0 0.1 1 10]
+   #:settlement (sr-bands (list 'now "2014-01-01" "2014-04-01" "2014-07-01" "2014-10-01" "2015-01-01")))
 
 ; Will a NASA astronaut be transported to the International Space Station in a commerical spacecraft by DEC 1 2017?
 (o 132 '[5 6])
@@ -181,7 +236,8 @@
 (o 180 '[5 10 10 10 10 9])
 
 ; Will the US National Security Agency build a gate model quantum computer before the end of 2017?
-(o 437 (yes 50) weak)
+(o 437 (yes 50) weak
+   #:settlement (yes-sooner "2017-12-31" #:frac 0.9))
 
 ; #548 "When will the first artificial internal organ created using AAM technology be successfully transplanted into a human?"
 (o 548 '[0.1 1 2 3 4 5 50])
@@ -193,13 +249,15 @@
 ;(o 568 '[1 2 3 4 5 6 7 8 9 10 11 15])
 
 ; Will Microsoft Office for iPad become one app instead of three apps (Word, Excel and Powerpoint) by the end of 2014?
-(o 580 (no 80) strong)
+(o 580 (no 80) strong
+   #:settlement (yes-sooner "2014-12-31" #:frac 0.666))
 
 ; When will the first primate be cloned?
 (o 582 '[0.4 1 1 1 5])
 
 ; Will there be a RFID malware attack by the end of 2014?
-(o 583 (no 90))
+(o 583 (no 90)
+   #:settlement (yes-sooner "2014-12-31"))
 
 ; When will commercial production of a microprocessor on a 450 millimeter silicon wafer begin?
 (o 637 '[1.5 2 3 3 3 12])
@@ -220,7 +278,9 @@
 (o 706 (yes 89) (* 2 strong))
 
 ; When will Skype provide voice and text language translation to its customers during calls? 
-(o 694 '[1 10 11 5] (* 3 strong))
+(o 694 '[1 10 11 5] (* 3 strong)
+   #:settlement (sr-bands (list 'now "2015-01-01" "2016-01-01" "2017-01-01")
+                          #:fracs '(0.9 0.55 0.4)))
 
 ; Will NASA's Cold Atom Lab successfully achieve a temperature of 100 picokelvin? 
 (o 322 (yes 45) weak)
@@ -258,7 +318,8 @@
 (o 342 (yes 10))
 
 ; Will the Japan-based over-the-top (OTT) messaging company Line Corporation complete an IPO before the end of 2014? 
-(o 425 (yes 60))
+(o 425 (yes 60)
+   #:settlement (yes-sooner "2014-12-31"))
 
 ; Will a cellphone that charges itself using self-charging power cells (SCPC) be demonstrated publicly before the end of 2015?
 (o 427 (yes 49) (* 3 strong))
@@ -278,7 +339,7 @@
 ;(o 461 '[0 0 100 0 0 0] (* 10 strong))
 
 ; Will there be at least one female winner of a Fields Medal in 2014?
-(o 462 (yes 20) weak)
+(o 462 (yes 100) weak)
 
 ; "How many venues will be listed on Coinmap on December 31, 2014?"
 (o 466 '[0.0001 0.0001 0.0001 0.0001 0.0001 2 9 20])
@@ -293,10 +354,8 @@
 (o 318 '[10 5 1 0.01 0.001] strong)
 
 ; Will the Apple iWatch be commercially available by the end of September 2014?
-(o 401 (no 91) strong)
-
-; Will Bluefin-21 locate the black box from Malaysian Airlines flight MH-370?
-;(o 464 (no 99) strong)
+(o 401 (yes 10) strong
+   #:settlement (yes-sooner "2014-09-30" #:frac 0.8))
 
 ; Will 23andMe offer health-related genetic reports for new customers by December 2014?
 (o 659 (yes 32) weak)
@@ -320,7 +379,7 @@
 (ou 102 (yes 25))
 
 ; Will Apple integrate a sapphire crystal solar power screen in its new iPhone6 due to be released later in 2014?
-(o 354 (no 95))
+(o 354 (no 98) strong)
 
 ; Will a VC-funded Bitcoin business initiate a public IPO by December 31 2014?
 (ou 625 (yes 15))
@@ -329,7 +388,7 @@
 (o 532 (linear-scale 2035 #:lo 2014 #:hi 2036))
 
 ; When will a single confirmed exploitation of the Heartbleed bug result in exposure of personally identifiable information (PII) of more than 1 million users?
-(o 539 '[0 0 0 0 0 100])
+;(o 539 '[0 0 0 0 0 100])
 
 ; Will quantum key distribution be integrated into a prototype mobile device by 1 January 2016?
 (o 562 (no 80))
@@ -338,13 +397,14 @@
 (o 149 '[1.1 1.25 1.5 1.75 2])
 
 ; Will the Axion Dark Matter Experiment detect axions by July 2014?
-(o 434 (yes 0))
+;(o 434 (yes 0))
 
 ; When will the first chess player achieve a rating of at least 2900?
 (o 313 '[5 4 3 2 1])
 
 ; Will Paypal integrate Bitcoin payments by February 28 2015?
-(o 341 (no 90) (* 2 strong))
+(o 341 (no 90) (* 2 strong)
+   #:settlement (yes-sooner "2015-02-28" #:frac 0.6))
 
 ; Will Google integrate Bitcoin payments into Google Wallet by February 28 2015?
 (o 338 (no 90) (* 2 strong))
@@ -359,7 +419,7 @@
 (o 456 (yes 40) strong)
 
 ; Will there be a hard fork to the Bitcoin block chain by December 31 2014?
-(ou 459 (yes 20))
+(ou 459 (yes 18))
 
 ; Will an orbiting body system be discovered in space before the end of 2019 which could verify at least one of the 13 new three-body problem solution families recently discovered by two Belgrade physicists?
 (o 442 (no 90) strong)
@@ -384,7 +444,8 @@
 (o 424 (no 66))
 
 ; Will project NA62 at the CERN in Geneva make a discovery of new unknown particles not predicted by the Standard Model of particle physics in 2014?
-(o 183 (no 98))
+(o 183 (no 98)
+   #:settlement (yes-sooner "2014-12-31" #:frac 0.8))
 
 ; What will the unemployment rate for ACS chemists be in 2014?
 (o 348 '[92 8 0 0 0 0])
@@ -401,7 +462,7 @@
 ;(o 99 '[0.5 10 1 0.1])
 
 ; Will the NASA's Mars Atmosphere and Volatile Evolution (MAVEN) spacescraft launched on November 17 2013 enter the Mars orbit by the end of September 2014?
-(o 143 (yes 97))
+(o 143 (yes 97) strong)
 
 ; Will the silver nanowire ink touch sensitive screens being developed by 3M and Cambrios be in commercially available smartphones by the end of 2015?
 (o 363 (yes 33))
@@ -430,7 +491,7 @@
 (o 181 '[1 2 3 4 5 45])
 
 ; "By the end of 2014 will there be at least three US states that tax e-cigarettes?"
-(ou 686 (yes 55) (varying-strength "2014-06-01" "2014-12-01"))
+(ou 686 (yes 70) weak)
 
 ; At its first launch, will Apple's iWatch include a sensor to measure blood glucose level non-invasively?
 (o 687 (no 92))
@@ -484,7 +545,7 @@
 (o 227 (no 90))
 
 ; How many countries will self-report to have met WHO International Health Regulations (2005) core capacity requirements by AUG 01 2014?
-(o 287 '[0 0 0 42 58])
+;(o 287 '[0 0 0 42 58])
 
 ; Will China have at least 30 nuclear power reactors in operation by the start of 2015?
 (o 173 (no 95))
@@ -499,7 +560,8 @@
 (o 509 (yes 0.0))
 
 ; Will the Large Underground Xenon dark matter experiment in Lead, SD detect the dark matter particles weakly interacting massive particles (WIMPs) or weakly interacting slim particles (WISPs) by the end of 2014?
-(o 145 (no 95))
+(o 145 (no 95)
+   #:settlement (yes-sooner "2014-12-31"))
 
 ; (10) id 438 "Will GE and Sasol's new AbMBR technology, which cleans waste water while generating biogas for power production, be comercially available by the end of June 2015?"
 (o 438 (yes 45) (varying-strength "2014-07-01" "2015-05-15"))
@@ -637,7 +699,8 @@
                         )))
 
 ; Will the Mars Curiosity Rover discover organic matter on Mars-evidence that life exists or existed on the planet-by July 1 2015?
-(o 377 (no 98.5))
+(o 377 (no 98.5)
+   #:settlement (yes-sooner "2015-07-01" #:frac 0.333))
 
 ; When will the Chinese National Space Administration land a man or woman on the moon?
 (o 136 '[1 9 10 10])
@@ -652,12 +715,13 @@
 (o 373 (yes 2))
 
 ; Will there be at least one major hurricane that makes US landfall in the 2014 hurricane season?
-(o 374 (yes 30))
+(o 374 (yes 30)
+   #:settlement (list "2014-11-30" "2014-11-01"))
 
 ; How many near-Earth large asteroids will NASA detect in 2014?
 (o 321 (map *
-            '[0.002 0.712 .279 0.0 0.0] ; from simple recent-only model
-            '[.123 0.871 .006 0.0 0.0]  ; from large long-term population-estimating model
+            '[0.02 0.712 .279 0.0 0.0] ; from simple recent-only model
+            '[.123 0.871 .06 0.0 0.0]  ; from large long-term population-estimating model
             ))
 
 ; When will 99% of the top 1 million web domains in the world be immune to Heartbleed? (538)
@@ -739,7 +803,7 @@
 (ou 727 (linear-scale 300 #:lo 0 #:hi 400) weak)
 
 ; MH370 search contract
-(ou 728 (linear-scale 52 #:lo 25 #:hi 275))
+;(ou 728 (linear-scale 52 #:lo 25 #:hi 275))
 
 ; When will the traversal conjecture be proven?
 (o 29 (list (/ (- 1420095600 (current-seconds))
@@ -819,7 +883,8 @@
 (o 557 '[10 1 10])
 
 ; Will a VC-funded Bitcoin business declare bankruptcy by December 31, 2014?
-(ou 624 (no 95) strong)
+(o 624 (no 95) strong
+   #:settlement (yes-sooner "2014-12-31" #:frac 0.75))
 
 ; How many threatened languages will the Ethnologue language catalog report in its 18th edition?
 (ou 663 '[1 5 30 50 30])
@@ -919,39 +984,8 @@
 ; If the icy surface of Pluto's giant moon Charon is cracked, analysis of the fractures could reveal if its interior was warm, perhaps warm enough to have maintained a subterranean ocean of liquid water. Will researchers observe cracks in Charon's surface?
 (o 740 (yes 40))
 
-#;(let* ([today (seconds->date (current-seconds))]
-       [up-to-date-day (- (date-day today) 3/2)]
-       [season-start -5]
-       [days-remaining (- (+ 31 2) up-to-date-day)]
-       [days-so-far (- up-to-date-day season-start)]
-       
-       [last-report-plain (set 'ca 'az 'co 'tx 'ok 'la 'mo 'tn 'mi 'ga 'ia 'sd 'mn 'wi 'ne)]
-       [last-report-neuro (set 'ca 'ok 'la 'az 'mo 'tn 'ms 'ga 'ne)]
-       [since-plain (set)]
-       [since-neuro (set)]
-       
-       [neuro-states (set-union last-report-neuro since-neuro)]
-       [any-states
-        (set-union last-report-plain since-plain neuro-states)]
-       
-       [neuro-rate (* 4/10 (/ (set-count neuro-states) days-so-far))]
-       [any-rate (* 5/10 (/ (set-count any-states) days-so-far))]
-
-       [neuro-predicted (+ (set-count neuro-states)
-                           (* neuro-rate days-remaining))]
-       [any-predicted (+ (set-count any-states)
-                         (* any-rate days-remaining))])
-  ; How many states will report at least one case of a West Niles virus human neuroinvasive disease by 1 August 2014?
-  (o 747 (linear-scale 9.5 #;neuro-predicted #:lo 1 #:hi 50) weak)
-  (printf "neuro west nile ~a~n" 9.5 #;(exact->inexact neuro-predicted))
-
-  ; How many states will report at least one case of a human West Nile infection to the CDC by 1 August 2014?
-  (o 738 (linear-scale 15.5 #;any-predicted #:lo 1 #:hi 50))
-  (printf "human west nile ~a~n" 15.5 #;(exact->inexact any-predicted))
-  )
-
-; #748 "What will be the peak percentage of users accessing Google via IPv6 at the end of January 2015?"
-(o 748 (linear-scale 5.308 #:lo 4.5 #:hi 6.0))
+; "What will be the peak percentage of users accessing Google via IPv6 at the end of January 2015?"
+(o 748 (linear-scale 5.314 #:lo 4.5 #:hi 6.0))
 
 ; When will photonic waveguide sensors being developed by Corning Inc. and Polytechnique Montreal be used in a commercially available smartphone?
 (o 749 '[0.1 1 2 3 6])
@@ -965,17 +999,22 @@
 ;            '[1 1 2 2 3  5 2 5 2 6] ; relative ease of task
 ;            ))
 
-; #755 "A 500-meter loop of elevated networked sky cars is planned to be built in Tel Aviv. When will it carry its first passenger?"
+; "A 500-meter loop of elevated networked sky cars is planned to be built in Tel Aviv. When will it carry its first passenger?"
 (o 755 '[0 10 15 20 20 15 10 10 10 20])
 
 ; How tall will Kingdom Tower in Saudi Arabia be when completed?
 (o 756 (linear-scale 1010 #:lo 999.0 #:hi 1060.0))
 
 ; Will a smartphone that incorporates a temperature sensor in the glass be publically available by Jan 1 2017?
-(o 757 (yes 10) strong)
+(o 757 (yes 10) strong
+   #:settlement (yes-sooner "2017-01-01" #:frac 0.8))
 
 ; A huge new hole or crater was recently discovered in a remote area in Siberia. What will the source of this hole be determined to be?
-(o 758 '[1 2 0 50])
+(o 758 '[1 2 0 50]
+   #:settlement (list (sr 'now "2014-09-30")
+                      (sr 'now "2014-09-30")
+                      (sr 'now "2014-09-30")
+                      "2014-09-30"))
 
 ; When will a handheld, flexible nanocellulose video screen be comercially available for sale?
 (o 759 '[1 2 2 3 3 4 9])
@@ -991,25 +1030,25 @@
 
 
 ; "Will SpaceX be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(ou 764 (yes 61)) ; adjusted from 60% belief by genie
+(ou 764 (yes 52)) ; adjusted from 60% belief by genie
 
 ; "Will Sierra Nevada be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(ou 765 (yes 52)) ; adjusted from 51% belief by genie
+(ou 765 (yes 72)) ; adjusted from 51% belief by genie
 
 ; "Will Boeing be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(ou 766 (yes 76)) ; adjusted from 75% belief by genie
+(ou 766 (yes 40)) ; adjusted from 75% belief by genie
 
 ; "How many organizations will be selected for the next phase of NASA's Commercial Crew Development program, aimed at developing the so-called 'space taxi'?"
-(o 767 '[4.1 25.9 46.2 23.6] 0.1) ; computed from genie network
+(o 767 '[1 36 61 8]) ; computed from genie network
 
 ; "Will SpaceX successfully complete the first manned test flight of its Dragon V2 spacecraft before June 30, 2016?"
-(o 768 (yes 45) weak)
+(o 768 (yes 46) weak)
 
 ; "Will Boeing successfully complete a manned test flight of its CST-100 spacecraft before the end of June 2017?"
-(o 769 (yes 50) weak)
+(o 769 (yes 45) weak)
 
 ; "Will Sierra Nevada successfully complete a manned test flight of its Dream Chaser spacecraft before the end of June 2017?"
-(o 770 (yes 45.2) weak)
+(o 770 (yes 45.5) weak)
 
 ; "Which company's manned 'space taxi' will be used first by NASA to transport astronauts to the International Space Station?"
 (o 771 '[100 80 70 50])
@@ -1024,10 +1063,10 @@
 (o 801 (yes 60))
 
 ; By the end of 2015, will there more than 1,000 CHAdeMO quick charging stations for battery electric vehicles in the U.S.?
-(o 802 (yes 60))
+(o 802 (yes 58))
 
 ; By the end of 2015, will there be more than 5,000 CHAdeMO quick charging stations for battery electric vehicles in the world?
-(o 803 (yes 60))
+(o 803 (yes 59))
 
 ; When will the world's first quantum key distribution satellite become operational?
 (o 805 '[0 1 1 2 2 2 2 10])
@@ -1057,7 +1096,7 @@
 (o 827 '[1000 1 1900])
 
 ; On what date will Dolly be upgraded to a hurricane?
-(o 834 '[10 150 200 150 200] weak)
+(o 834 (primary-option 4 .521 '[1 50 150 100 70]) weak)
 
 ; Which of the following Atlantic tropical storms will be the next to make U. S. landfall?
 (o 835 '[99 98 70 50 30 10 2])
@@ -1067,3 +1106,10 @@
 
 ; Will NASA's measurement of thrust from an 'impossible' space drive be reproduced on the next try?
 (o 837 (yes 33))
+
+; How many concussions will be sustained in the 2014 NFL seson?
+(o 838 (linear-scale 240 #:lo 150 #:hi 350))
+
+; Will Yahoo Offer End-to-End (E2EE) Encryption as a Feature in Yahoo Mail by June 30, 2015?
+(o 842 (yes 33) weak)
+
