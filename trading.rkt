@@ -69,6 +69,7 @@
 
 (define (kelly-utility #:beliefs beliefs
                        #:assets initial-assets
+                       #:present-value-factors [pvf #f]
                        #:initial-probabilities initial-probabilities
                        #:debt-limit [debt-limit 0])
   (define bankroll (- debt-limit))
@@ -84,16 +85,32 @@
                  (< new-debt initial-debt))
             (no-good (void)))
 
-      (for/sum ([b beliefs]
-                [o outcomes]
-                [pab per-asset-bankroll])
-               (if (< (+ o pab) 0)
-                   (no-good (void))
-                   (* b (log (+ o pab))))))))
+      (define bottom
+        (for/fold ([m 1e300])
+                  ([o outcomes]
+                   [pab per-asset-bankroll])
+          (min m (+ o pab))))
+
+      (if pvf
+          (for/sum ([b beliefs]
+                    [o outcomes]
+                    [factor pvf]
+                    [pab per-asset-bankroll])
+                   (if (< (+ o pab) 0)
+                       (no-good (void))
+                       (* b (log (+ (* factor (- (+ o pab) bottom)) bottom)))))
+          (for/sum ([b beliefs]
+                    [o outcomes]
+                    [pab per-asset-bankroll])
+                   (if (< (+ o pab) 0)
+                       (no-good (void))
+                       (* b (log (+ o pab)))))
+          ))))
 
 (define (utility-function
          #:beliefs beliefs
          #:assets initial-assets
+         #:present-value-factors [pvf #f]
          #:initial-probabilities initial-probabilities
          #:debt-limit [debt-limit 0])
   ; this is how much the market is currently holding onto
@@ -152,6 +169,7 @@
 (define (python-utility
          #:beliefs beliefs
          #:assets initial-assets
+         #:present-value-factors [pvf #f]
          #:initial-probabilities initial-probabilities
          #:debt-limit [debt-limit 0])
   ; this is how much the market is currently holding onto
@@ -201,6 +219,7 @@
          attribute)
   (lambda (#:beliefs beliefs
            #:assets initial-assets
+           #:present-value-factors [pvf #f]
            #:initial-probabilities initial-probabilities
            #:debt-limit [debt-limit 0])
     ; this is how much the market is currently holding onto
@@ -323,6 +342,7 @@
          #:initial-probabilities initial-probabilities
          #:beliefs beliefs
          #:minimum-change [ignore1 0]
+         #:present-value-factors [pvf #f]
          #:trade-limit [ignore2 0])
   (define uf (utility-function 
               #:beliefs beliefs
@@ -338,6 +358,7 @@
          comparison-function
          #:search-step [search-step 1]
          #:assets assets
+         #:present-value-factors [pvf #f]
          #:debt-limit debt-limit
          #:initial-probabilities initial-probabilities
          #:beliefs beliefs)
@@ -349,6 +370,7 @@
      #:function (utility-function
                  #:beliefs beliefs
                  #:assets assets
+                 #:present-value-factors pvf
                  #:initial-probabilities initial-probabilities
                  #:debt-limit debt-limit)
      #:comparison comparison-function))
@@ -358,6 +380,7 @@
          utility-function
 	 comparison-function
          #:assets initial-assets
+         #:present-value-factors pvf
          #:debt-limit debt-limit
          #:beliefs beliefs
          #:search-step [search-step 1]
@@ -369,8 +392,11 @@
       (done '()))
     (define next-trade
       (find-optimal-trade utility-function comparison-function
-                          #:assets initial-assets #:beliefs beliefs
+                          #:assets initial-assets
+                          #:present-value-factors pvf
+                          #:beliefs beliefs
                           #:initial-probabilities initial-probabilities
+                          #:search-step search-step
                           #:debt-limit debt-limit))
     ;(printf "~a~n" next-trade)
     (define max-difference
@@ -384,11 +410,13 @@
     (cons next-trade
           (find-optimal-trade-sequence
            utility-function comparison-function
-           #:assets new-assets #:beliefs beliefs
+           #:assets new-assets
+           #:present-value-factors pvf
+           #:beliefs beliefs
            #:initial-probabilities next-trade
            #:debt-limit debt-limit
            ; search with smaller resolution on the cleanup
-           #:search-step 1/3
+           #:search-step 1 ;1/2
            ; we've already found one trade that is worth executing
            ; further improvements are "free" these days
            #:minimum-change 1/20
@@ -412,6 +440,7 @@
    #:initial-assets [initial-assets #f]
    #:debt-limit [debt-limit (maximum-points-tied-up (question-settlement-at question))]
    #:summary-hash [sh (make-hash)]
+   #:present-value-factors [pvf #f]
    #:user-name my-user-name)
   (->* ((hash/c symbol? any/c)
 	(non-empty-listof (non-empty-listof (real-in 0.0 1.0)))
@@ -419,7 +448,8 @@
        (#:debt-limit real?
 	#:initial-assets (or/c #f (non-empty-listof real?))
 	#:beliefs (or/c #f (non-empty-listof (real-in 0.0 1.0)))
-	#:summary-hash (hash/c symbol? number?))
+	#:summary-hash (hash/c symbol? number?)
+        #:present-value-factors (non-empty-listof (real-in 0.0 1.0)))
        string?)
 
   (define initial-probabilities (question-probability question))
@@ -523,8 +553,10 @@
 	  (hash-set! sh 'initial-final-score initial-final-score)
 	  (hash-set! sh 'new-final-score new-final-score)
 	  (hash-set! sh 'final-score-improvement (- new-final-score initial-final-score))
-          (hash-set! sh 'initial-kelly (simple-kelly beliefs initial-assets debt-limit))
-          (hash-set! sh 'final-kelly (simple-kelly beliefs (last assets-per-trade) debt-limit))
+          (hash-set! sh 'initial-kelly (simple-kelly beliefs initial-assets debt-limit
+                                                     #:present-value-factors pvf))
+          (hash-set! sh 'final-kelly (simple-kelly beliefs (last assets-per-trade) debt-limit
+                                                   #:present-value-factors pvf))
           (hash-set! sh 'kelly-improvement
                      (- (hash-ref sh 'final-kelly) (hash-ref sh 'initial-kelly)))
 
@@ -544,11 +576,17 @@
         "")
     ) ""))
 
-(define (simple-kelly beliefs assets debt-limit)
-  (let ([pab (calc-per-asset-bankroll assets debt-limit)])
-    (sum (map *
-              beliefs
-              (map log pab)))))
+(define (simple-kelly beliefs assets debt-limit #:present-value-factors [pvf #f])
+  (let* ([pab (calc-per-asset-bankroll assets debt-limit)]
+         [bottom (apply min pab)])
+    (if pvf
+        (for/sum ([b beliefs]
+                  [factor pvf]
+                  [a pab])
+          (* b (log (+ (* factor (- a bottom)) bottom))))
+        (for/sum ([b beliefs]
+                  [a pab])
+          (* b (log a))))))
 
 (provide utility-function
          kelly-utility

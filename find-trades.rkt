@@ -156,6 +156,28 @@
 (define (empty-assets q)
   (build-list (length (question-probability q)) (lambda x 0.0)))
 
+(define *RATE* 0.0001)
+
+(define (compute-present-value-factors q o)
+  (let* ([s (opinion-settlement o)]
+         [now (current-seconds)]
+         [settlement-at (question-settlement-at q)]
+         [final (if settlement-at
+                    (date->seconds settlement-at)
+                    1e300)])
+    (if s
+        (for/list ([a-s s])
+          (cond
+           [(<= a-s now) 1.0]
+           [(< final a-s) (/ (exp (* *RATE* (/ (- final now) 86400.0))))]
+           [else (/ (exp (* *RATE* (/ (- a-s now) 86400.0))))]))
+        (for/list ([i (question-probability q)])
+                  1.0
+                  ; uncomment this when everything has settlement info.
+                  ; until then, no point disturbing existing assets
+                  ;(/ (exp (* *RATE* (/ (- final now) 86400.0))))
+          ))))
+
 (define (perform-opinionated-search question-ids)
   (for ([q-id question-ids])
     (set-add! threads
@@ -190,6 +212,7 @@
              #:beliefs (opinion-beliefs opinion)
              #:initial-probabilities (question-probability q)
              #:trade-limit 8
+             #:present-value-factors (compute-present-value-factors q opinion)
              ));)
 
 	 (when (> (length trade-sequence) 0)
@@ -236,6 +259,7 @@
        #:minimum-change 1/4
        #:beliefs (opinion-beliefs opinion)
        #:initial-probabilities (trade-new-values trade)
+       #:present-value-factors (compute-present-value-factors q opinion)
        #:trade-limit 5
        ))
 
@@ -352,6 +376,7 @@
 	 #:debt-limit (* (opinion-strength opinion)
 			 (maximum-points-tied-up (question-settlement-at q)))
 	 #:beliefs (opinion-beliefs opinion)
+         #:present-value-factors (compute-present-value-factors q opinion)
 	 ))
 
       ; The next three blocks check to see if the proposed trade is high
@@ -384,8 +409,11 @@
               (cons
                `(final-score
                  ,(hash-ref summary-details 'final-score-improvement)
-                 ,(max 2.0
-                       (* 1/200 (hash-ref summary-details 'initial-final-score))))
+                 ,(if (>= 0.0
+                         (hash-ref summary-details 'initial-final-score))
+                      0.0
+                      (max 2.0
+                       (* 1/200 (hash-ref summary-details 'initial-final-score)))))
                potential-improvements)))
 
       ; Finally
@@ -397,7 +425,7 @@
                        thing])
             (if (or (>= value target)
                     sufficient-improvement?
-                    ;(>= value (* (sqrt (random)) target))
+                    (>= value (* (sqrt (random)) target))
                     )
                 #t
                 (begin
