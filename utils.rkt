@@ -4,6 +4,7 @@
          math/flonum
 	 (planet bzlib/date/plt)
 	 racket/contract
+         (only-in racket/list make-list)
 	 (rename-in (only-in srfi/54 cat) [cat unsafe-cat])
 	 net/url
 	 racket/port
@@ -47,20 +48,24 @@
    [settled-at distant-future])
   (->* ((or/c date? #f)) () (<=/c 0.0))
 
+  ; now that we account for present value when trading, maybe this
+  ; should be linear over the next X months?
   (if settled-at
-      (let ([days-remaining
+      (let* ([dr-raw
 	     (exact->inexact
-              (date- settled-at (seconds->date (current-seconds))))])
-	(if (< days-remaining 0.0)
-	    0.0
-	    (let ([v (fl* (fl* 0.333 1010.81)
-                          (flexp (fl* (fl* -0.0107473 1.0) days-remaining)))])
-	      (fl- 0.0
-                   (cond
-                    [(fl> v 1000.0) 1000.0]
-                    [(fl< v    7.5)    7.5]
-                    [else v])))))
-      -1.0))
+              (date- settled-at (seconds->date (current-seconds))))]
+             [days-remaining
+              (if (< dr-raw 1.0)
+                  1.0
+                  dr-raw)])
+        (let ([v (fl* (fl* 0.34 1010.81)
+                      (flexp (fl* (fl* -0.0107473 1.0) days-remaining)))])
+          (fl- 0.0
+               (cond
+                [(fl> v 1000.0) 1000.0]
+                [(fl< v    7.5)    7.5]
+                [else v]))))
+      0.0))
 
 (define log2 (fllog 2.0))
 ; Robin Hanson's LMSR formula, but with the probability
@@ -90,16 +95,32 @@
       (index-list-lookup i (cdr idxs) (cdr vals))))
 
 (define/contract
-  (shift-choice-probability probabilities choice raw-new-values)
-  (-> (listof (real-in 0.0 1.0))
-      (listof natural-number/c)
-      (listof (real-in 0 1))
-      (listof (real-in 0.0 1.0)))
+  (shift-choice-probability probabilities choice raw-new-values
+                            #:locked [locked (make-list (length probabilities) #f)])
+  (->* ((listof (real-in 0.0 1.0))
+        (listof natural-number/c)
+        (listof (real-in 0 1)))
+       (#:locked (listof boolean?))
+       (listof (real-in 0.0 1.0)))
+
+  (define new-sum (sum raw-new-values))
+
+  (define locked-prob
+    (for/sum ([p probabilities]
+              [l locked]
+              #:when l)
+             p))
+
+  (when (> (+ new-sum locked-prob) 1.0)
+    (error "too much locked up probability; can't shift"))
 
   (define new-value
-    (for/list ([i (in-range 0 (length probabilities))])
+    (for/list ([i (in-range 0 (length probabilities))]
+               [locked locked])
       (if (member i choice)
-          (index-list-lookup i choice raw-new-values)
+          (if locked
+              (error "can't change locked choice")
+              (index-list-lookup i choice raw-new-values))
           (void))))
 
   (define leftover
@@ -112,19 +133,24 @@
   (define sum-of-unspecified-probabilies
     (for/sum ([i (in-naturals)]
               [p probabilities]
-              #:when (not (member i choice)))
+              [locked locked]
+              #:when (not (or locked
+                              (member i choice))))
       p))
 
   (define l/s (fl/ leftover sum-of-unspecified-probabilies))
 
   (for/list ([p probabilities]
              [n new-value]
-             [i (in-naturals)])
-    (if (member i choice)
-        n
-        (if (fl> sum-of-unspecified-probabilies 0.0)
-            (fl+ p (fl* l/s p))
-            0.0)))
+             [i (in-naturals)]
+             [locked locked])
+    (if locked
+        p
+        (if (member i choice)
+            n
+            (if (fl> sum-of-unspecified-probabilies 0.0)
+                (fl+ p (fl* l/s p))
+                0.0))))
   )
 
 (define rate-limiter (make-channel))
@@ -133,7 +159,7 @@
    (channel-put rate-limiter 'startup)
    (for ([i (in-naturals)])
      (channel-put rate-limiter i)
-     (sleep 7.5)))))
+     (sleep 15)))))
 (define (rate-limit)
   (void (channel-get rate-limiter)))
 

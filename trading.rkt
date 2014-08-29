@@ -28,6 +28,7 @@
 (define
   (maximize-probability-adjustment
    #:probabilities initial-probabilities
+   #:locked locked
    #:function f
    #:search-step [search-step 1]
    #:comparison [> >])
@@ -38,7 +39,17 @@
   (define indexes
     (if (= (length initial-probabilities) 2)
         '(1)
-        (sequence->list (in-range 0 (length initial-probabilities)))))
+        (for/fold ([v '()])
+                  ([i (in-range 0 (length initial-probabilities))])
+          (if (list-ref locked i)
+              v
+              (cons i v)))))
+
+  (define locked-up-prob
+    (for/sum ([p initial-probabilities]
+              [l locked]
+              #:when l)
+             p))
 
   ; loop over every choice, and all the possible new probabilities
   ; for it. compute the function we're maximizing, and check to see
@@ -46,12 +57,13 @@
   (for*/fold ([new-probabilities initial-probabilities]
               [maximized-value (f initial-probabilities #:initial #t)])
     ([choice indexes]
-     [new-probability (in-range 1/100 1 (/ search-step 100))])
+     [new-probability (in-range 1/100 (- 1 locked-up-prob) (/ search-step 100))])
     (let* ([shifted-probabilities
             (shift-choice-probability
              initial-probabilities
              (list choice)
-             (list (exact->inexact new-probability)))]
+             (list (exact->inexact new-probability))
+             #:locked locked)]
            [v (f shifted-probabilities)])
       ;(printf "~a ~a~n" shifted-probabilities v)
       ; we'll let f return void so it can say "screw those options, i don't even want to vote"
@@ -361,12 +373,14 @@
          #:present-value-factors [pvf #f]
          #:debt-limit debt-limit
          #:initial-probabilities initial-probabilities
+         #:locked locked
          #:beliefs beliefs)
   (define-values
     (new-probabilities utility)
     (maximize-probability-adjustment
      #:probabilities initial-probabilities
      #:search-step search-step
+     #:locked locked
      #:function (utility-function
                  #:beliefs beliefs
                  #:assets assets
@@ -386,7 +400,8 @@
          #:search-step [search-step 1]
 	 #:minimum-change [minimum-change 1/3]
          #:initial-probabilities initial-probabilities
-         #:trade-limit [trade-limit 10])
+         #:locked locked
+         #:trade-limit [trade-limit 12])
   (let/ec done
     (when (= trade-limit 0)
       (done '()))
@@ -397,6 +412,7 @@
                           #:beliefs beliefs
                           #:initial-probabilities initial-probabilities
                           #:search-step search-step
+                          #:locked locked
                           #:debt-limit debt-limit))
     ;(printf "~a~n" next-trade)
     (define max-difference
@@ -420,6 +436,7 @@
            ; we've already found one trade that is worth executing
            ; further improvements are "free" these days
            #:minimum-change 1/20
+           #:locked locked
            #:trade-limit (sub1 trade-limit)))))
 
 (define (determine-choice ps)

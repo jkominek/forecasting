@@ -156,7 +156,7 @@
 (define (empty-assets q)
   (build-list (length (question-probability q)) (lambda x 0.0)))
 
-(define *RATE* 0.0001)
+(define *RATE* 0.00009)
 
 (define (compute-present-value-factors q o)
   (let* ([s (opinion-settlement o)]
@@ -212,6 +212,7 @@
              #:beliefs (opinion-beliefs opinion)
              #:initial-probabilities (question-probability q)
              #:trade-limit 8
+             #:locked (question-choices-locked q)
              #:present-value-factors (compute-present-value-factors q opinion)
              ));)
 
@@ -223,8 +224,7 @@
 (define seen-self-trades (mutable-set))
 
 (define (start-monitoring [delay-chunk 10])
-  ;(sleep (* 8 60))
-  (sleep 60)
+  (sleep 100)
   (printf "checking ~a~n" (date->string (current-date)))
   (define trades (fetch-latest-trades))
   (define found-stuff #f)
@@ -260,6 +260,7 @@
        #:beliefs (opinion-beliefs opinion)
        #:initial-probabilities (trade-new-values trade)
        #:present-value-factors (compute-present-value-factors q opinion)
+       #:locked (question-choices-locked q)
        #:trade-limit 5
        ))
 
@@ -385,14 +386,14 @@
       (define potential-improvements
         `((credit
            ,(hash-ref summary-details 'credit)
-           ,(max 2.0
+           ,(max 50.0
                  (* 1/200 (apply min (hash-ref standings q-id (empty-assets q))))))
-          #;(current-score
+          (current-score
            ,(hash-ref summary-details 'current-score-improvement)
-           ,(max 20.0
+           ,(max 100.0
                  (* 1/10 (hash-ref summary-details 'initial-current-score))))
-          #;(total-assets
-           ,(hash-ref summary-details 'total-Δassets) 10)
+          (total-assets
+           ,(hash-ref summary-details 'total-Δassets) 500)
           ))
 
       ; Next, if we have specific beliefs about this one, we've got some
@@ -402,8 +403,8 @@
               (cons
                `(kelly-improvement
                  ,(hash-ref summary-details 'kelly-improvement)
-                 ,(min 0.25
-                       (* 3/100 (hash-ref summary-details 'initial-kelly))))
+                 ,(min 0.1
+                       (* 5/100 (hash-ref summary-details 'initial-kelly))))
                potential-improvements))
         (set! potential-improvements
               (cons
@@ -412,7 +413,7 @@
                  ,(if (>= 0.0
                          (hash-ref summary-details 'initial-final-score))
                       0.0
-                      (max 2.0
+                      (max 2.5
                        (* 1/200 (hash-ref summary-details 'initial-final-score)))))
                potential-improvements)))
 
@@ -425,7 +426,7 @@
                        thing])
             (if (or (>= value target)
                     sufficient-improvement?
-                    (>= value (* (sqrt (random)) target))
+                    (<= (* 10.0 (random)) (/ value target))
                     )
                 #t
                 (begin

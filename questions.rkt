@@ -142,7 +142,9 @@
 (define (question-updated-at q)
   (read-iso8601 (hash-ref (hash-ref q 'question) 'updated_at)))
 
-(define (question-settlement-at q)
+(define/contract
+  (question-settlement-at q)
+  (-> question/c (or/c date? #f))
   (let ([v (hash-ref (hash-ref q 'question) 'settlement_at)])
     (if (string? v)
 	(read-iso8601 v)
@@ -187,6 +189,10 @@
 	  (hash-ref q 'question_choices)
 	  (hash-ref (hash-ref q 'question) 'choices))))
 
+(define/contract (question-choices-locked q)
+  (-> jsexpr? (listof boolean?))
+  (map (lambda (c) (hash-ref c 'is_locked)) (question-choices q)))
+
 (define/contract (question-choice q i)
   (-> jsexpr? natural-number/c (hash/c symbol? any/c))
 
@@ -216,7 +222,7 @@
 	 question-challenge question-description question-visible?
 	 question-locked? question-choices question-choice
 	 question-trade-count question-comment-count question-trades
-         question-user-assets question-ordered?)
+         question-user-assets question-ordered? question-choices-locked)
 
 (define (choice-name c)
   (hash-ref c 'name))
