@@ -283,7 +283,7 @@
    #:settlement (yes-sooner "2014-12-31"))
 
 ; When will commercial production of a microprocessor on a 450 millimeter silicon wafer begin?
-(o 637 '[1.5 2 3 3 3 12]
+(o 637 '[1 2 3 3 3 12]
    #:settlement (sr-bands (list 'now "2017-01-01" "2020-01-01" "2023-01-01" "2026-01-01" "2029-01-01")))
 
 ; When will the first reported collision occur between an autonomous vehicle and a human driven vehicle on a public road? 
@@ -291,8 +291,8 @@
    #:settlement (sr-bands (list 'now "2020-12-31" "2024-12-31" "2028-12-31" "2032-12-31")))
 
 ; Will Google acquire Twitch by the end of September 2014?
-(o 674 (yes 70)
-    #:settlement (yes-sooner "2014-09-30" #:frac 0.9))
+(o 674 (yes 0.8)
+    #:settlement (list "2014-08-25" "2014-08-25"))
 
 ; Will researchers provide a practical demonstration of the newly discovered weakness in the discrete logarithm problem, used widely in cryptography, by December 31, 2014?
 (o 702 (yes 4)
@@ -410,8 +410,8 @@
 (o 318 '[10 5 1 0.01 0.001] strong)
 
 ; Will the Apple iWatch be commercially available by the end of September 2014?
-(o 401 (yes 10) strong
-   #:settlement (yes-sooner "2014-09-30" #:frac 0.8))
+(o 401 (yes 15) (* 0.8 strong)
+   #:settlement (yes-sooner "2014-09-30" #:frac 0.4))
 
 ; Will 23andMe offer health-related genetic reports for new customers by December 2014?
 (o 659 (yes 32) weak
@@ -443,9 +443,9 @@
    #:settlement (yes-sooner "2014-12-31" #:frac 0.75))
 
 ; Will Apple integrate a sapphire crystal solar power screen in its new iPhone6 due to be released later in 2014?
-(o 354 (no 98.1) (* 3 strong)
-   #:settlement (list (sr 'now "2014-12-31")
-                      (sr 'now "2014-12-31")))
+(o 354 (no 99) (* 3 strong)
+   #:settlement (list (sr 'now "2014-09-09")
+                      (sr 'now "2014-09-09")))
 
 ; Will a VC-funded Bitcoin business initiate a public IPO by December 31 2014?
 (o 625 (yes 15)
@@ -668,7 +668,7 @@
 (o 178 '[0 50 50 0 0] strong)
 
 ; In the week of November 23rd-29th 2014 will Walmart be searched more frequently than Amazon in Google Search?
-(o 649 (yes 90) strong)
+(o 649 (yes 92) strong)
 
 ; when will a fully autonomous (self-driving) car made by a major auto maker drive more than 60 miles in the united states without input from the driver?
 (o 696 '[2 3 4 3 2 1] weak
@@ -810,7 +810,7 @@
 (o 226 (yes 63.1))
 
 ; Will there be at least one major hurricane that makes US landfall in the 2014 hurricane season?
-(o 374 (yes 30)
+(o 374 (yes 25)
    #:settlement (list "2014-11-30" "2014-11-01"))
 
 ; How many near-Earth large asteroids will NASA detect in 2014?
@@ -829,8 +829,8 @@
 (o 189 (yes 1))
 
 ; Will there be 15 or more named storms (including subtropical storms) in the Atlantic-Caribbean-Gulf of Mexico region during the 2014 hurricane season?
-(o 410 (yes 25) weak
-   #:settlement (yes-sooner "2014-11-30" #:frac 0.6))
+(o 410 (yes 14.595) ; 1.0-cdf(poisson(11),15-1)
+   #:settlement (yes-sooner "2014-11-30" #:frac 0.75))
 
 ; When will floating wind turbines be used in a commercial offshore wind turbine farm?
 (o 712 '[1 2 3 4 5 6]
@@ -876,7 +876,7 @@
    #:settlement (sr-bands (list 'now "2015-01-01" "2020-01-01" "2030-01-01" "2050-01-01")))
 
 ; Internet of things 20 billion connected devices at end of 2013. how many at end of 2014?
-(o 566 '[1 10 12 10 8] weak)
+(o 566 '[1 10 11 12 11] weak)
 
 ; world produced 4.4 zettabytes in 2013. how much in 2014?
 (o 620 '[0.2 2 9 10 6] weak)
@@ -928,11 +928,11 @@
                       "2016-01-01"))
 
 ; MH370 search days
-(o 727 (linear-scale 300 #:lo 0 #:hi 400) weak
+(o 727 (linear-scale 300 #:lo 0 #:hi 400) strong
     #:settlement (no-sooner "2016-12-31"))
 
 ; MH370 search contract
-;(o 728 (linear-scale 52 #:lo 25 #:hi 275))
+(o 728 (linear-scale 50 #;52 #:lo 25 #:hi 275))
 
 ; When will the traversal conjecture be proven?
 (o 29 (list (/ (- 1420095600 (current-seconds))
@@ -995,7 +995,7 @@
 (o 184 '[37.08 37.85 18.24 6.83])
 
 ; Will the clinical trial being carried out at Penn State University into selenium supplements for men at risk for prostate cancer show that the mineral has a protective effect?
-(o 207 (yes 5))
+;(o 207 (yes 5))
 
 ; When will a supersonic aircraft be available again for commercial travel?
 (o 320 '[21 8 7 6 5]
@@ -1006,7 +1006,7 @@
    #:settlement (sr-bands (list 'now "2014-07-31" "2014-10-31" "2015-12-31" "2015-04-30")))
 
 ; When will the Rosetta's small robotic lander, Philae, land successfully on the surface of a comet?
-(o 349 '[0 0 10 8 6 4 2 5]
+(o 349 '[0 0 12 7 5 3 2 5]
    #:settlement (sr-bands (list 'now "2014-11-01" "2014-11-09" "2014-11-16"
                                 "2014-11-23" "2014-11-30" "2014-12-07" "2014-12-14")))
 
@@ -1266,11 +1266,11 @@
 ; How close will the closest near Earth object that is tracked by NASA come to Earth in the 60 days between August 2nd and September 30th 2014?
    ;;;; (o 823 '[15 30 50 20 0])
 
-; When will a distinct source of ultraâhigh-energy cosmic rays be discovered?
+; When will a distinct source of ultrahigh-energy cosmic rays be discovered?
 (o 824 '[2.4 1 1 1 5]
    #:settlement (sr-bands (list 'now "2017-01-01" "2018-01-01" "2019-01-01" "2020-01-01")))
 
-; Singlet fission transforms an excited singlet state into a pair of triplet excitons and can potentially boost the efficiency of solar energy conversion. Will an inorganic solar cell exceed the ShockleyâQueisser limit of 33% using singlet fission by 2017?
+; Singlet fission transforms an excited singlet state into a pair of triplet excitons and can potentially boost the efficiency of solar energy conversion. Will an inorganic solar cell exceed the Shockley-Queisser limit of 33% using singlet fission by 2017?
 (o 825 (yes 10)
    #:settlement (yes-sooner "2016-12-31"))
 
@@ -1283,28 +1283,19 @@
 (o 827 '[1000 1 1900])
 
 ; On what date will Dolly be upgraded to a hurricane?
-(o 834 (primary-option 4 .521 '[1 45 150 100 70]) weak
-   #:settlement (sr-bands (list 'now "2014-08-15" "2014-08-21" "2014-08-28" "2014-09-04")))
+(o 834 (primary-option 4 (- 1 .52) '[.00001 .00001 .0001 9 100])
+   #:settlement (sr-bands (list 'now "2014-08-15" "2014-08-21"
+                                "2014-08-28" "2014-09-04")))
 
 ; Which of the following Atlantic tropical storms will be the next to make U. S. landfall?
-(o 835 '[99 98 70 50 30 10 2]
-   #:settlement (list (sr 'now "2014-09-01")
-                      (sr 'now "2014-09-15")
-                      (sr 'now "2014-10-01")
-                      (sr 'now "2014-10-15")
-                      (sr 'now "2014-11-01")
-                      (sr 'now "2014-11-30")
-                      "2014-11-30"))                      
-
-; Which of the following Atlantic tropical storms will be the next to be upgraded to a hurricane?
-(o 836 '[45 26 14 7 3 1 3]
-   #:settlement (list (sr 'now "2014-09-01")
-                      (sr 'now "2014-09-15")
-                      (sr 'now "2014-10-01")
-                      (sr 'now "2014-10-15")
-                      (sr 'now "2014-11-01")
-                      (sr 'now "2014-11-30")
-                      "2014-11-30"))
+(o 835 '[ 0.0001 31 21 10  6  4 28]
+   #:settlement (list "2100-01-01"
+                      (sr 'now "2014-09-13")
+                      (sr 'now "2014-09-26")
+                      (sr 'now "2014-10-11")
+                      (sr 'now "2014-10-25")
+                      (sr 'now "2014-11-10")
+                      (sr 'now "2014-11-20" #:frac 0.75)))
 
 ; Will NASA's measurement of thrust from an 'impossible' space drive be reproduced on the next try?
 (o 837 (yes 33)
@@ -1329,11 +1320,30 @@
 ; How many unclassified languages will the Ethnologue language catalog report in its 18th edition?
 (o 845 '[100 5 5 5 100] weak)
 
-; What team will score the highest in NISTâs 2015 OpenMT Arabic-To-English machine translation evaluation?
+; What team will score the highest in NIST's 2015 OpenMT Arabic-To-English machine translation evaluation?
 (o 846 '[90 100 100 100 80 60 80 90 60 60 100 100 70])
 
-; What team will score the highest in NISTâs 2015 OpenMT Chinese-To-English machine translation evaluation?
+; What team will score the highest in NIST's 2015 OpenMT Chinese-To-English machine translation evaluation?
 (o 847 '[90 100 90 100 80 80 70 80 90 80 100 80 100 100 90 80 70])
 
 ; Will the NIST 2015 OpenMT Arabic-To-English machine translation evaluation be a split decision?
 (o 848 (yes 40) weak)
+
+; When will a wireless pacemaker be commercially available in the United States?
+(o 850 '[5 6 6 6]
+   #:settlement (sr-bands (list 'now "2015-12-31" "2016-12-31" "2017-12-31")))
+
+; What will the unemployment rate for ACS chemists be in 2015?
+(o 851 (linear-scale 3.0 #:lo 0.0 #:hi 4.7))
+
+; Will Magnus Carlsen win the 2014 World Chess Championship match and defend his title?
+(o 853 (yes 66) weak)
+
+; Will NASA confirm the presence of sea plankton living on the outside of the International Space Station?
+(o 854 (yes 40) (* 0.5 weak))
+
+; Windows 9 available before April 30 2015?
+(o 861 (yes 40) #:settlement (yes-sooner "2015-04-30" #:frac 0.75))
+
+; Windows 9 64-bit only?
+(o 863 (yes 66) #:settlement (yes-sooner "2015-07-01"))
