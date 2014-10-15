@@ -165,18 +165,24 @@
          [final (if settlement-at
                     (date->seconds settlement-at)
                     1e300)])
-    (if s
-        (for/list ([a-s s])
-          (cond
-           [(<= a-s now) 1.0]
-           [(< final a-s) (/ (exp (* *RATE* (/ (- final now) 86400.0))))]
-           [else (/ (exp (* *RATE* (/ (- a-s now) 86400.0))))]))
-        (for/list ([i (question-probability q)])
-                  1.0
-                  ; uncomment this when everything has settlement info.
-                  ; until then, no point disturbing existing assets
-                  ;(/ (exp (* *RATE* (/ (- final now) 86400.0))))
-          ))))
+    (map
+     (lambda (v)
+       (cond
+        [(<= v 0.0) 0.0]
+        [(>= v 1.0) 1.0]
+        [else v]))
+     (if s
+         (for/list ([a-s s])
+           (cond
+            [(<= a-s now) 1.0]
+            [(< final a-s) (/ (exp (* *RATE* (/ (- final now) 86400.0))))]
+            [else (/ (exp (* *RATE* (/ (- a-s now) 86400.0))))]))
+         (for/list ([i (question-probability q)])
+                   ;1.0
+                   ; uncomment this when everything has settlement info.
+                   ; until then, no point disturbing existing assets
+                   (/ (exp (* *RATE* (/ (- final now) 86400.0))))
+                   )))))
 
 (define (perform-opinionated-search question-ids)
   (for ([q-id question-ids])
@@ -223,8 +229,8 @@
 
 (define seen-self-trades (mutable-set))
 
-(define (start-monitoring [delay-chunk 10])
-  (sleep 100)
+(define (start-monitoring [delay-chunk 4])
+  (sleep 120)
   (printf "checking ~a~n" (date->string (current-date)))
   (define trades (fetch-latest-trades))
   (define found-stuff #f)
@@ -271,13 +277,13 @@
   (flush-output)
   (if found-stuff
       (begin
-        (sleep 60)
+        (sleep (+ 120 (random 120)))
         (start-monitoring))
       (begin
         (sleep
-         (min 1800
-          (+ 60 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk))))))
-        (monitoring-comprehensive (+ 60 delay-chunk))))
+         (min 3600
+          (+ 120 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk))))))
+        (monitoring-comprehensive (+ 120 delay-chunk))))
   )
 
 (define last-comprehensive-search (current-seconds))
@@ -315,7 +321,6 @@
 
 (when (monitor)
   (printf "starting monitor thread~n")
-  (log-in "jkominek" "***REMOVED***")
   (set-add! threads (thread start-monitoring)))
 
 (cond
@@ -386,14 +391,15 @@
       (define potential-improvements
         `((credit
            ,(hash-ref summary-details 'credit)
-           ,(max 50.0
+           ,(max 18.0
                  (* 1/200 (apply min (hash-ref standings q-id (empty-assets q))))))
           (current-score
            ,(hash-ref summary-details 'current-score-improvement)
-           ,(max 100.0
+           ,(max 50.0
                  (* 1/10 (hash-ref summary-details 'initial-current-score))))
           (total-assets
-           ,(hash-ref summary-details 'total-Δassets) 500)
+           ,(hash-ref summary-details 'total-Δassets)
+           500)
           ))
 
       ; Next, if we have specific beliefs about this one, we've got some
@@ -403,7 +409,7 @@
               (cons
                `(kelly-improvement
                  ,(hash-ref summary-details 'kelly-improvement)
-                 ,(min 0.1
+                 ,(min 0.07
                        (* 5/100 (hash-ref summary-details 'initial-kelly))))
                potential-improvements))
         (set! potential-improvements
@@ -413,7 +419,7 @@
                  ,(if (>= 0.0
                          (hash-ref summary-details 'initial-final-score))
                       0.0
-                      (max 2.5
+                      (max 3.0
                        (* 1/200 (hash-ref summary-details 'initial-final-score)))))
                potential-improvements)))
 
@@ -426,7 +432,7 @@
                        thing])
             (if (or (>= value target)
                     sufficient-improvement?
-                    (<= (* 10.0 (random)) (/ value target))
+                    (<= (* 4.0 (random)) (/ value target))
                     )
                 #t
                 (begin
@@ -438,7 +444,7 @@
         (continue (void)))
 
       ; display the details on the trade
-      (printf "(~a) ~a~n~ https://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
+      (printf "(~a) ~a~n~ http://scicast.org/#!/questions/~a/trades/create/power~n~a~n"
 	      (question-id q)
 	      (question-name q)
 	      (question-id q)
@@ -458,9 +464,6 @@
 	(unless (regexp-match #rx"^y" (read-line))
           ; anything starting with 'y' is good
 	  (continue (void))))
-
-      (unless (have-session?)
-	(log-in "jkominek" "***REMOVED***"))
 
       (let ([trade
 	     (make-trade q-id

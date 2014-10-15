@@ -34,7 +34,7 @@
 (define my-user-name (make-parameter #f))
 (define my-user-id (make-parameter #f))
 
-(define *standard-question-list-url* "https://scicast.org/questions/?include_prob=True&include_comment_count=True&include_trade_count=True&include_user_roles=False&include_question_clique=False&include_question_relationship=False")
+(define *standard-question-list-url* (format "https://scicast.org/questions/index?include_prob=True&include_comment_count=True&include_trade_count=True&include_user_roles=False&include_question_clique=False&include_question_relationship=False&api_key=~a" (api-key)))
 
 (provide question-database load-question-database
 	 load-question-database-url/cache-to-file *standard-question-list-url*
@@ -62,8 +62,8 @@
 
 (define (question-url q-id)
   (format
-   "https://scicast.org/questions/show?question_id=~a&include_prob=True&include_cash=True&include_trades=True&include_comments=False&include_trade_ranges=True&include_recommendations=False"
-   q-id))
+   "http:://scicast.org/questions/show?question_id=~a&include_prob=True&include_cash=True&include_trades=True&include_comments=False&include_trade_ranges=True&include_recommendations=False&api_key=~a"
+   q-id (api-key)))
 
 (define/contract
   (fetch-full-question q-or-qid
@@ -286,7 +286,7 @@
   (make-parameter (make-hash)))
 
 (define (user-trades-url user-id)
-  (format "https://scicast.org/trades/?user_id=~a&include_current_probs=False" user-id))
+  (format "https://scicast.org/trades/?user_id=~a&include_current_probs=False&api_key=~a" user-id (api-key)))
 
 (define/contract
   (fetch-user-trades user-id #:max-age [max-age 1800])

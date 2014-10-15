@@ -12,6 +12,8 @@
 	 file/gunzip
          syntax/parse/define)
 
+(define api-key (make-parameter "904de0b733dc6f1e"))
+
 (define cat
   (lambda x
     (cond
@@ -58,12 +60,12 @@
               (if (< dr-raw 1.0)
                   1.0
                   dr-raw)])
-        (let ([v (fl* (fl* 0.34 1010.81)
+        (let ([v (fl* (fl* 0.60 1010.81)
                       (flexp (fl* (fl* -0.0107473 1.0) days-remaining)))])
           (fl- 0.0
                (cond
-                [(fl> v 1000.0) 1000.0]
-                [(fl< v    7.5)    7.5]
+                [(fl> v  750.0)  750.0]
+                [(fl< v    8.0)    8.0]
                 [else v]))))
       0.0))
 
@@ -169,8 +171,9 @@
   (printf "fetching from network!~n")
 
   (time
-   (define p (get-pure-port (string->url url-string)
-                            '("Accept-encoding: gzip")))
+   (define p (get-impure-port (string->url url-string)
+                              '("Accept-encoding: gzip")))
+   (flush-output (current-output-port))
    (define-values (in out) (make-pipe))
    (thread (lambda ()
              (gunzip-through-ports p out)
@@ -229,4 +232,5 @@
 	 pretty-string-list
          update-standings
          rate-limit
+         api-key
 	 )

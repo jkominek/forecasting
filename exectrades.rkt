@@ -1,47 +1,17 @@
 #lang racket
 
-(require net/cookie
+(require 
          net/http-client
          json
 	 (planet bzlib/date/plt)
 	 (file "/home/jkominek/forecasting/questions.rkt")
-	 (only-in (file "/home/jkominek/forecasting/utils.rkt") lmsr-outcomes first-value rate-limit))
-
-(define cookie-header (make-parameter #f))
-
-(define/contract
-  (have-session?)
-  (-> (or/c #t #f))
-
-  (not (equal? (cookie-header) #f)))
+	 (only-in (file "/home/jkominek/forecasting/utils.rkt") lmsr-outcomes first-value rate-limit api-key))
 
 (define/contract
   (get-connection)
   (-> http-conn?)
 
   (http-conn-open "scicast.org" #:ssl? #t))
-
-(define/contract
-  (log-in user-name password #:hc [hc (get-connection)])
-  (->* (string? string?) (#:hc http-conn?) void?)
-
-  (define-values
-    (status-line headers body-port)
-    (http-conn-sendrecv! hc "/session/create"
-                         #:method "POST"
-                         #:headers (list "Content-Type: application/x-www-form-urlencoded"
-                                         "Accept: application/json")
-                         #:data (format "username=~a&password=~a" user-name password)))
-  (let/ec found
-    (for ([header headers])
-      (when (regexp-match #rx#"^Set-Cookie: session_id" header)
-        (let* ([cookie (subbytes header 23)]
-               [session-id (car (regexp-match #rx#"^[a-fA-F0-9]+" cookie))])
-          (cookie-header (bytes-append #"Cookie: session_id=" session-id))
-          (found (void)))))
-
-    (http-conn-close! hc)
-    (error "failed to log in or get cookie header")))
 
 (define (n->s v)
   (string-trim #:left? #f #:repeat? #t (real->decimal-string v 20) "0"))
@@ -79,9 +49,10 @@
   (define old-value-str (string-join (map n->s old) "%2C"))
 
   (define query
-    (format "/trades/create?question_id=~a&new_value=~a&dimension=~a&interface_type=2&old_values=%5B~a%5D&max_allowed_cost=~a"
-	    q-id new-value-str dimension old-value-str
-	    (n->s (+ 0.0001 (max 0.0 computed-cost)))))
+    (format "/trades/create?question_id=~a&new_value=~a&interface_type=2&old_values=%5B~a%5D&max_allowed_cost=~a&api_key=~a"
+	    q-id new-value-str old-value-str
+	    (n->s (+ 0.0001 (max 0.0 computed-cost)))
+            (api-key)))
 
   (rate-limit)
   (define-values
@@ -89,8 +60,7 @@
     (http-conn-sendrecv! hc query
                          #:method "GET"
 			 #:content-decode '()
-                         #:headers (list "Accept: application/json"
-					 (cookie-header))))
+                         #:headers (list "Accept: application/json")))
 
   (let ([json (read-json body-port)])
     (if (hash-has-key? json 'trade)
@@ -109,11 +79,11 @@
   (rate-limit)
   (define-values
     (status-line headers body-port)
-    (http-conn-sendrecv! hc "/users/relevant_activities?group_by=question"
+    (http-conn-sendrecv! hc 
+                         (format "/users/relevant_activities?group_by=question&api_key=~a" (api-key))
                          #:method "GET"
                          #:content-decode '()
-                         #:headers (list "Accept: application/json"
-                                         (cookie-header))))
+                         #:headers (list "Accept: application/json")))
 
   ;(printf "~a~n~a~n" status-line headers)
 
@@ -136,4 +106,4 @@
 
    latest))
 
-(provide get-connection log-in make-trade fetch-latest-trades have-session?)
+(provide get-connection make-trade fetch-latest-trades)
