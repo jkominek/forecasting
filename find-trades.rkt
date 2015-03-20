@@ -281,8 +281,8 @@
         (start-monitoring))
       (begin
         (sleep
-         (min 3600
-          (+ 120 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk))))))
+         (min 1800
+          (+ 90 (* delay-chunk 1/4) (random (round (* 3/4 delay-chunk))))))
         (monitoring-comprehensive (+ 120 delay-chunk))))
   )
 
@@ -364,7 +364,7 @@
        (list q-id q opinion trade-sequence)
        from-channel)
 
-      (printf "got ~a in on the channel. ~a long trade seq~n" q-id (length trade-sequence))
+      ;(printf "got ~a in on the channel. ~a long trade seq~n" q-id (length trade-sequence))
 
       (define summary-details (make-hash))
       (printf "   considering ~a shift to ~a~n" q-id
@@ -389,15 +389,15 @@
       ; enough quality to be worth proposing to the user / executing.
       ; First step, define all the checks that are always available to us.
       (define potential-improvements
-        `((credit
+        `(#;(credit
            ,(hash-ref summary-details 'credit)
-           ,(max 18.0
+           ,(max 20.0
                  (* 1/200 (apply min (hash-ref standings q-id (empty-assets q))))))
-          (current-score
+          #;(current-score
            ,(hash-ref summary-details 'current-score-improvement)
            ,(max 50.0
                  (* 1/10 (hash-ref summary-details 'initial-current-score))))
-          (total-assets
+          #;(total-assets
            ,(hash-ref summary-details 'total-Δassets)
            500)
           ))
@@ -405,23 +405,34 @@
       ; Next, if we have specific beliefs about this one, we've got some
       ; more checks we can do to see if the trade is worthwhile
       (when (hash-has-key? summary-details 'final-score-improvement)
-        (set! potential-improvements
-              (cons
-               `(kelly-improvement
-                 ,(hash-ref summary-details 'kelly-improvement)
-                 ,(min 0.07
-                       (* 5/100 (hash-ref summary-details 'initial-kelly))))
-               potential-improvements))
-        (set! potential-improvements
-              (cons
-               `(final-score
-                 ,(hash-ref summary-details 'final-score-improvement)
-                 ,(if (>= 0.0
-                         (hash-ref summary-details 'initial-final-score))
-                      0.0
-                      (max 3.0
-                       (* 1/200 (hash-ref summary-details 'initial-final-score)))))
-               potential-improvements)))
+            #;(set! potential-improvements
+                  (cons
+                   `(combined
+                     ,(hash-ref summary-details 'kelly-improvement)
+                     ,(if
+                       (and (> (hash-ref summary-details 'final-score-improvement) 0.0)
+                            (> (hash-ref summary-details 'current-score-improvement) 0.0)
+                            (> (hash-ref summary-details 'credit) 0.0))
+                       0.0 1.0))
+                   potential-improvements))
+            (set! potential-improvements
+                  (cons
+                   `(kelly-improvement
+                     ,(hash-ref summary-details 'kelly-improvement)
+                     ,(if (< (hash-ref summary-details 'final-score-improvement) -10)
+                          (min 0.06 (* 15/100 (hash-ref summary-details 'initial-kelly)))
+                          (if (> (hash-ref summary-details 'credit) 0.0)
+                              (min 0.01 (* 1/100 (hash-ref summary-details 'initial-kelly)))
+                              (min 0.05
+                                   (* 1/10 (hash-ref summary-details 'initial-kelly))))))
+                   potential-improvements))
+            (set! potential-improvements
+                  (cons
+                   `(final-score
+                     ,(hash-ref summary-details 'final-score-improvement)
+                     ,(min 10.0
+                           (max 1.0 (* 10/100 (max 1.0 (hash-ref summary-details 'initial-final-score))))))
+                   potential-improvements)))
 
       ; Finally
       (unless
@@ -432,7 +443,7 @@
                        thing])
             (if (or (>= value target)
                     sufficient-improvement?
-                    (<= (* 4.0 (random)) (/ value target))
+                    ;(<= (random) (/ value target))
                     )
                 #t
                 (begin

@@ -12,7 +12,7 @@
 	 file/gunzip
          syntax/parse/define)
 
-(define api-key (make-parameter "904de0b733dc6f1e"))
+(define api-key (make-parameter "***REMOVED***"))
 
 (define cat
   (lambda x
@@ -38,8 +38,8 @@
   (-> (listof (>=/c 0)) (listof (real-in 0 1)))
 
   (let* ([l (map exact->inexact l)]
-         [sum (flsum l)])
-    (map (lambda (x) (fl/ x sum)) l)))
+         [sum (sum l)])
+    (map (lambda (x) (/ x sum)) l)))
 
 (define distant-future (seconds->date 2524608000))
 ; Given a time, compute the number of points we're willing to
@@ -60,16 +60,16 @@
               (if (< dr-raw 1.0)
                   1.0
                   dr-raw)])
-        (let ([v (fl* (fl* 0.60 1010.81)
-                      (flexp (fl* (fl* -0.0107473 1.0) days-remaining)))])
-          (fl- 0.0
+        (let ([v (* (* 820)
+                      (exp (* -0.0045 days-remaining)))])
+          (- 0.0
                (cond
-                [(fl> v  750.0)  750.0]
-                [(fl< v    8.0)    8.0]
+                [(> v  700.0)  700.0]
+                [(< v  100.0)  100.0]
                 [else v]))))
       0.0))
 
-(define log2 (fllog 2.0))
+(define log2 (log 2.0))
 ; Robin Hanson's LMSR formula, but with the probability
 ; division done in log-space, so things don't go horribly
 ; wrong.
@@ -77,9 +77,9 @@
   (lmsr-outcome start stop)
   (-> (real-in 0.0 1.0) (real-in 0.0 1.0) real?)
   
-  (fl* -100.0
-       (fl- (fl/ (fllog start) log2)
-            (fl/ (fllog stop) log2))))
+  (* -100.0
+       (- (/ (log (exact->inexact start)) log2)
+            (/ (log (exact->inexact stop)) log2))))
 
 ; Applies the LMSR to a list of old probabilities and new
 ; ones, providing the per-choice cost as a list.
@@ -140,7 +140,7 @@
                               (member i choice))))
       p))
 
-  (define l/s (fl/ leftover sum-of-unspecified-probabilies))
+  (define l/s (/ leftover sum-of-unspecified-probabilies))
 
   (for/list ([p probabilities]
              [n new-value]
@@ -150,8 +150,8 @@
         p
         (if (member i choice)
             n
-            (if (fl> sum-of-unspecified-probabilies 0.0)
-                (fl+ p (fl* l/s p))
+            (if (> sum-of-unspecified-probabilies 0.0)
+                (+ p (* l/s p))
                 0.0))))
   )
 
@@ -173,7 +173,7 @@
   (time
    (define p (get-impure-port (string->url url-string)
                               '("Accept-encoding: gzip")))
-   (flush-output (current-output-port))
+   (purify-port p)
    (define-values (in out) (make-pipe))
    (thread (lambda ()
              (gunzip-through-ports p out)

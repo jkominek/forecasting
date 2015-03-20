@@ -423,21 +423,23 @@
     (when (< max-difference (/ minimum-change 100))
       (done '()))
     (define new-assets (map + initial-assets (lmsr-outcomes initial-probabilities next-trade)))
-    (cons next-trade
-          (find-optimal-trade-sequence
-           utility-function comparison-function
-           #:assets new-assets
-           #:present-value-factors pvf
-           #:beliefs beliefs
-           #:initial-probabilities next-trade
-           #:debt-limit debt-limit
-           ; search with smaller resolution on the cleanup
-           #:search-step 1 ;1/2
-           ; we've already found one trade that is worth executing
-           ; further improvements are "free" these days
-           #:minimum-change 1/20
-           #:locked locked
-           #:trade-limit (sub1 trade-limit)))))
+    (if (= (length initial-assets) 2)
+        (list next-trade)
+        (cons next-trade
+              (find-optimal-trade-sequence
+               utility-function comparison-function
+               #:assets new-assets
+               #:present-value-factors pvf
+               #:beliefs beliefs
+               #:initial-probabilities next-trade
+               #:debt-limit debt-limit
+                                        ; search with smaller resolution on the cleanup
+               #:search-step 1 ;1/2
+                                        ; we've already found one trade that is worth executing
+                                        ; further improvements are "free" these days
+               #:minimum-change 1/20
+               #:locked locked
+               #:trade-limit (sub1 trade-limit))))))
 
 (define (determine-choice ps)
   ; better hope that one of the choices matches

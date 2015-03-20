@@ -62,7 +62,7 @@
 
 (define (question-url q-id)
   (format
-   "http:://scicast.org/questions/show?question_id=~a&include_prob=True&include_cash=True&include_trades=True&include_comments=False&include_trade_ranges=True&include_recommendations=False&api_key=~a"
+   "http://scicast.org/questions/show?question_id=~a&include_prob=True&include_cash=True&include_trades=True&include_comments=False&include_trade_ranges=True&include_recommendations=False&api_key=~a"
    q-id (api-key)))
 
 (define/contract
@@ -285,17 +285,25 @@
   (parameter/c (hash/c natural-number/c (listof any/c)))
   (make-parameter (make-hash)))
 
-(define (user-trades-url user-id)
-  (format "https://scicast.org/trades/?user_id=~a&include_current_probs=False&api_key=~a" user-id (api-key)))
+(define (user-trades-url user-id [newer-than #f])
+  (if newer-than
+      (set! newer-than (format "&newer_than=~a" newer-than))
+      (set! newer-than ""))
+  (format "https://scicast.org/trades/?user_id=~a&include_current_probs=False~a&api_key=~a"
+          user-id newer-than (api-key)))
 
 (define/contract
-  (fetch-user-trades user-id #:max-age [max-age 1800])
+  (fetch-user-trades user-id
+                     #:newer-than [newer-than #f]
+                     #:max-age [max-age 1800])
   (->* (natural-number/c) (#:max-age natural-number/c) jsexpr?)
 
   (if (hash-has-key? (trade-database) user-id)
       (hash-ref (trade-database) user-id)
       (let* ([utpath (build-path "ut" (number->string user-id))]
-	     [v (read-json (open-url/cache-to-file (user-trades-url user-id) utpath #:max-age max-age))])
+	     [v (read-json (open-url/cache-to-file (user-trades-url user-id newer-than)
+                                                   utpath
+                                                   #:max-age max-age))])
 	(hash-set! (trade-database) user-id v)
 	v)))
 
